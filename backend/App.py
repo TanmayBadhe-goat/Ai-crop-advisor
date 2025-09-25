@@ -20,7 +20,8 @@ CORS(app)
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
-logger = loggEMINI_API_KEY = os.environ.get('Gemini_API_key')
+logger = logging.getLogger(__name__)
+GEMINI_API_KEY = os.environ.get('Gemini_API_key')
 WEATHER_API_KEY = os.environ.get('Weather_API_key')
 
 # Configure Gemini
@@ -219,6 +220,10 @@ def generate_agricultural_advisory(weather_data):
 @app.route('/', methods=['GET'])
 def home():
     return jsonify({'message': 'KrishiMitra API Running', 'status': 'OK'})
+
+@app.route('/api/health', methods=['GET'])
+def api_health():
+    return jsonify({'status': 'ok', 'service': 'KrishiMitra API'}), 200
 
 @app.route('/api/predict', methods=['POST'])
 def predict():

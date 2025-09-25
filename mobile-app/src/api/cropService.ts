@@ -5,7 +5,7 @@ import NetInfo from '@react-native-community/netinfo';
 // Base URL for the backend API
 // Use Railway production URL for both development and production
 const RAILWAY_API_URL = 'https://web-production-d6596.up.railway.app/api';
-const LOCAL_API_URL = 'http://10.0.2.2:5000/api'; // Android emulator localhost
+const LOCAL_API_URL = 'http://10.50.48.61:5000/api'; // Android emulator localhost
 const LOCALHOST_API_URL = 'http://localhost:5000/api'; // iOS simulator
 const PC_LOCAL_URL = 'http://192.168.29.153:5000/api'; // PC local network IP
 
@@ -17,14 +17,13 @@ console.log('Using API URL:', API_URL);
 console.log('Platform:', Platform.OS);
 
 // Configure axios defaults for mobile data optimization
-axios.defaults.timeout = 20000; // Increased timeout for mobile hotspot connections
+axios.defaults.timeout = 12000; // Lower timeout to avoid long waits on flaky networks
 axios.defaults.headers.common['User-Agent'] = `KrishiMitra-Mobile/${Platform.OS}`;
 axios.defaults.headers.common['Cache-Control'] = 'no-cache';
 axios.defaults.headers.common['Pragma'] = 'no-cache';
-axios.defaults.headers.common['Connection'] = 'keep-alive';
 // Additional headers for mobile hotspot compatibility
 axios.defaults.headers.common['Accept'] = 'application/json, text/plain, */*';
-axios.defaults.headers.common['Accept-Encoding'] = 'gzip, deflate, br';
+// Do not force Accept-Encoding; let RN/OkHttp negotiate to avoid br issues on some networks
 
 // Add request interceptor for better mobile data handling
 axios.interceptors.request.use(
@@ -61,8 +60,8 @@ const testConnectivity = async (url: string): Promise<boolean> => {
       return false;
     }
 
-    const response = await axios.get(`${url}/dashboard-stats`, {
-      timeout: 8000, // Increased timeout for mobile hotspot connectivity
+    const response = await axios.get(`${url}/health`, {
+      timeout: 4000, // Faster probe to avoid long waits during switches
       headers: {
         'Cache-Control': 'no-cache',
         'Pragma': 'no-cache'
@@ -75,15 +74,35 @@ const testConnectivity = async (url: string): Promise<boolean> => {
   }
 };
 
+// Very quick connectivity test used when network changes
+const testConnectivityQuick = async (url: string): Promise<boolean> => {
+  try {
+    const netInfo = await NetInfo.fetch();
+    if (!netInfo.isConnected) return false;
+    const response = await axios.get(`${url}/health`, {
+      timeout: 3000,
+      headers: {
+        'Cache-Control': 'no-cache',
+        'Pragma': 'no-cache',
+      },
+    });
+    return response.status === 200;
+  } catch {
+    return false;
+  }
+};
+
 // Find the best available API URL
 const findBestApiUrl = async (): Promise<string> => {
   console.log('Finding best API URL...');
   
   // Test URLs in order of preference
   const urlsToTest = [
+    // Prefer production Railway first for SIH demo stability
     RAILWAY_API_URL,
-    PC_LOCAL_URL,
-    Platform.OS === 'android' ? LOCAL_API_URL : LOCALHOST_API_URL
+    // Development fallbacks only if needed (kept but de-prioritized)
+    // PC_LOCAL_URL,
+    // Platform.OS === 'android' ? LOCAL_API_URL : LOCALHOST_API_URL,
   ];
   
   for (const url of urlsToTest) {
@@ -101,6 +120,37 @@ const findBestApiUrl = async (): Promise<string> => {
   API_URL = RAILWAY_API_URL;
   return RAILWAY_API_URL;
 };
+
+// Start a lightweight network monitor to quickly re-select the API on connectivity changes
+let monitoringStarted = false;
+const quickSelectApiUrl = async () => {
+  // Only prefer Railway for production reliability
+  const candidates = [RAILWAY_API_URL];
+  for (const url of candidates) {
+    if (await testConnectivityQuick(url)) {
+      if (currentApiUrl !== url) {
+        console.log('Switched API URL to:', url);
+      }
+      currentApiUrl = url;
+      API_URL = url;
+      return;
+    }
+  }
+};
+
+const startNetworkMonitoring = () => {
+  if (monitoringStarted) return;
+  monitoringStarted = true;
+  NetInfo.addEventListener((state) => {
+    if (state.isConnected) {
+      // When network becomes available or changes, re-validate quickly
+      quickSelectApiUrl();
+    }
+  });
+};
+
+// Initialize monitoring immediately
+startNetworkMonitoring();
 
 // Network retry utility with exponential backoff
 const retryWithBackoff = async <T>(
@@ -269,7 +319,8 @@ export interface DashboardStatsResponse {
 
 // Get the current API URL (with automatic discovery)
 export const getBestApiUrl = async (): Promise<string> => {
-  return await findBestApiUrl();
+  // Fast path: use current API URL; avoid probing unless explicitly needed
+  return currentApiUrl;
 };
 
 // Get current API URL without testing (for display purposes)
@@ -281,44 +332,44 @@ export const getCurrentApiUrl = (): string => {
 export const cropService = {
   // Get crop recommendation with retry mechanism
   predictCrop: async (data: CropPredictionRequest): Promise<CropPredictionResponse> => {
-    const apiUrl = await findBestApiUrl();
+    const apiUrl = currentApiUrl;
     return retryWithBackoff(async () => {
       const response = await axios.post(`${apiUrl}/predict`, data, {
-        timeout: 18000, // Increased timeout for mobile hotspot connections
+        timeout: 12000, // Faster timeout to reduce perceived wait
         headers: {
           'Content-Type': 'application/json',
         },
       });
       return response.data;
-    }, 2, 1500); // 2 retries with 1.5s base delay
+    }, 1, 1200); // 1 retry with 1.2s base delay
   },
 
   // Get weather data with retry mechanism
   getWeather: async (data: WeatherRequest): Promise<WeatherResponse> => {
-    const apiUrl = await findBestApiUrl();
+    const apiUrl = currentApiUrl;
     return retryWithBackoff(async () => {
       const response = await axios.post(`${apiUrl}/weather`, data, {
-        timeout: 18000, // Increased timeout for mobile hotspot connections
+        timeout: 12000, // Faster timeout
         headers: {
           'Content-Type': 'application/json',
         },
       });
       return response.data;
-    }, 2, 1500); // 2 retries with 1.5s base delay
+    }, 1, 1200); // 1 retry
   },
 
   // Send message to chatbot with retry mechanism
   sendChatMessage: async (data: ChatbotRequest): Promise<ChatbotResponse> => {
-    const apiUrl = await findBestApiUrl();
+    const apiUrl = currentApiUrl;
     return retryWithBackoff(async () => {
       const response = await axios.post(`${apiUrl}/chatbot`, data, {
-        timeout: 15000, // 15 second timeout for chat
+        timeout: 12000, // Faster timeout for chat
         headers: {
           'Content-Type': 'application/json',
         },
       });
       return response.data;
-    }, 2, 1000); // 2 retries with 1s base delay
+    }, 1, 1000); // 1 retry
   },
 
   // Upload image for disease detection with fallback mechanism
@@ -347,7 +398,7 @@ export const cropService = {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
-        timeout: 20000, // Increased timeout for mobile hotspot connections
+        timeout: 15000, // Slightly reduced timeout
       });
 
       console.log('Image upload response:', uploadResponse.data);
@@ -365,7 +416,7 @@ export const cropService = {
         headers: {
           'Content-Type': 'application/json',
         },
-        timeout: 20000, // Increased timeout for mobile hotspot connections
+        timeout: 15000, // Slightly reduced timeout
       });
 
       console.log('Disease detection response:', diseaseResponse.data);
@@ -378,13 +429,13 @@ export const cropService = {
     };
 
     // Retry mechanism with exponential backoff
-    const maxRetries = 2;
+    const maxRetries = 1; // Reduce retries to avoid long waits
     let lastError: any;
 
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
       try {
         console.log(`Attempt ${attempt + 1}/${maxRetries + 1} - Trying Railway API`);
-        return await tryDetectWithUrl(RAILWAY_API_URL);
+        return await tryDetectWithUrl(currentApiUrl);
       } catch (error) {
         lastError = error;
         console.warn(`Railway API attempt ${attempt + 1} failed:`, error);
@@ -426,13 +477,13 @@ export const cropService = {
 
   // Get dashboard statistics with retry mechanism
   getDashboardStats: async (): Promise<DashboardStatsResponse> => {
-    const apiUrl = await findBestApiUrl();
+    const apiUrl = currentApiUrl;
     return retryWithBackoff(async () => {
       const response = await axios.get(`${apiUrl}/dashboard-stats`, {
-        timeout: 8000, // 8 second timeout
+        timeout: 5000, // Shorter timeout for snappier UI
       });
       return response.data;
-    }, 1, 1000); // 1 retry with 1s delay for dashboard stats
+    }, 1, 800); // 1 retry with 0.8s delay for dashboard stats
   },
 
   // Check network connectivity
@@ -451,8 +502,8 @@ export const cropService = {
 
   // Test API connectivity
   testApiConnectivity: async (): Promise<boolean> => {
-    const apiUrl = await findBestApiUrl();
-    return testConnectivity(apiUrl);
+    const apiUrl = currentApiUrl;
+    return testConnectivityQuick(apiUrl);
   },
 
   // Get current API URL info
