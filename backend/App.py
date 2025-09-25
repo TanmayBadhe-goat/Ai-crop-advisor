@@ -23,11 +23,21 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 GEMINI_API_KEY = os.environ.get('Gemini_API_key')
 WEATHER_API_KEY = os.environ.get('Weather_API_key')
-GEMINI_MODEL = os.environ.get('GEMINI_MODEL', 'gemini-1.5-flash')
+# Use gemini-pro which is more widely available
+GEMINI_MODEL = os.environ.get('GEMINI_MODEL', 'gemini-pro')
 
 # Configure Gemini
-genai.configure(api_key=GEMINI_API_KEY)
-logger.info(f"Gemini API configured: {'Yes' if bool(GEMINI_API_KEY) else 'No'} | Model: {GEMINI_MODEL}")
+if GEMINI_API_KEY:
+    try:
+        genai.configure(api_key=GEMINI_API_KEY)
+        logger.info(f"Gemini API configured: Yes | Model: {GEMINI_MODEL}")
+    except Exception as e:
+        logger.error(f"Failed to configure Gemini API: {e}")
+        GEMINI_API_KEY = None  # Disable if configuration fails
+else:
+    logger.warning("Gemini API key not found")
+
+logger.info(f"Weather API configured: {'Yes' if bool(WEATHER_API_KEY) else 'No'}")
 
 # Combined training data (corrected - all arrays have 30 elements)
 training_data = {
@@ -294,16 +304,37 @@ def chatbot():
             logger.warning('Gemini API key missing; returning fallback reply')
             return jsonify({'success': True, 'response': 'I cannot access the assistant right now. Please try again later.'})
 
-        # Use model from environment to avoid unavailable version errors in some regions/projects
-        model_ai = genai.GenerativeModel(GEMINI_MODEL)
-        style = 'Answer very concisely in 1-3 sentences.' if concise else 'Answer clearly and helpfully.'
-        locale = f"Respond in language/locale: {lang}." if lang else ''
-        prompt = f"You are a farming expert. {style} {locale} Question: {user_msg}"
-        resp = model_ai.generate_content(prompt)
-        text = (resp.text or '').strip()
-        if not text:
-            text = 'Sorry, I could not generate a response.'
-        return jsonify({'success': True, 'response': text, 'lang': lang, 'concise': concise})
+        try:
+            # Try to use the specified model, with fallback to gemini-pro
+            model_ai = genai.GenerativeModel(GEMINI_MODEL)
+            style = 'Answer very concisely in 1-3 sentences.' if concise else 'Answer clearly and helpfully.'
+            locale = f"Respond in language/locale: {lang}." if lang else ''
+            prompt = f"You are a farming expert. {style} {locale} Question: {user_msg}"
+            resp = model_ai.generate_content(prompt)
+            text = (resp.text or '').strip()
+            if not text:
+                text = 'Sorry, I could not generate a response.'
+            return jsonify({'success': True, 'response': text, 'lang': lang, 'concise': concise})
+        except Exception as model_error:
+            # If the model fails, try gemini-pro as fallback
+            if 'gemini-pro' not in GEMINI_MODEL.lower():
+                try:
+                    logger.warning(f"Model {GEMINI_MODEL} failed, trying gemini-pro: {model_error}")
+                    fallback_model = genai.GenerativeModel('gemini-pro')
+                    prompt = f"You are a farming expert. Answer concisely. Question: {user_msg}"
+                    resp = fallback_model.generate_content(prompt)
+                    text = (resp.text or '').strip()
+                    if text:
+                        return jsonify({'success': True, 'response': text, 'lang': lang, 'concise': concise})
+                except:
+                    pass
+            # If all Gemini attempts fail, provide helpful fallback
+            logger.error(f"All Gemini models failed: {model_error}")
+            return jsonify({
+                'success': True, 
+                'response': 'I apologize, but I cannot access the AI assistant right now. Please try again later or consult local agricultural experts for immediate assistance.',
+                'fallback': True
+            })
     except Exception as e:
         logger.error(f"Chatbot error: {e}")
         return jsonify({'success': True, 'response': 'Please consult local experts.'})
