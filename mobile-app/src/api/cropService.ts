@@ -1,29 +1,153 @@
-import axios from 'axios';
+import axios, { AxiosError, AxiosRequestConfig } from 'axios';
 import { Platform } from 'react-native';
+import NetInfo from '@react-native-community/netinfo';
 
 // Base URL for the backend API
 // Use Railway production URL for both development and production
 const RAILWAY_API_URL = 'https://web-production-af45d.up.railway.app/api';
 const LOCAL_API_URL = 'http://10.0.2.2:5000/api'; // Android emulator localhost
 const LOCALHOST_API_URL = 'http://localhost:5000/api'; // iOS simulator
+const PC_LOCAL_URL = 'http://192.168.29.153:5000/api'; // PC local network IP
 
-// Try Railway first, fallback to local if needed
-const API_URL = RAILWAY_API_URL;
+// Dynamic API URL - will be determined at runtime
+let API_URL = RAILWAY_API_URL;
+let currentApiUrl = RAILWAY_API_URL;
 
 console.log('Using API URL:', API_URL);
 console.log('Platform:', Platform.OS);
 
-// Network connectivity test function
+// Configure axios defaults for mobile data optimization
+axios.defaults.timeout = 15000; // Reduced to 15 seconds for faster fallback
+axios.defaults.headers.common['User-Agent'] = `KrishiMitra-Mobile/${Platform.OS}`;
+axios.defaults.headers.common['Cache-Control'] = 'no-cache';
+axios.defaults.headers.common['Pragma'] = 'no-cache';
+axios.defaults.headers.common['Connection'] = 'keep-alive';
+
+// Add request interceptor for better mobile data handling
+axios.interceptors.request.use(
+  (config) => {
+    // Add timestamp to prevent caching issues on mobile data
+    if (config.url && !config.url.includes('?')) {
+      config.url += `?_t=${Date.now()}`;
+    } else if (config.url) {
+      config.url += `&_t=${Date.now()}`;
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
+// Add response interceptor for better error handling
+axios.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    console.log('Axios interceptor caught error:', error.message);
+    return Promise.reject(error);
+  }
+);
+
+// Enhanced network connectivity test function
 const testConnectivity = async (url: string): Promise<boolean> => {
   try {
+    // First check device network connectivity
+    const netInfo = await NetInfo.fetch();
+    if (!netInfo.isConnected) {
+      console.log('Device is not connected to internet');
+      return false;
+    }
+
     const response = await axios.get(`${url}/dashboard-stats`, {
-      timeout: 5000,
+      timeout: 5000, // Reduced timeout for faster fallback
+      headers: {
+        'Cache-Control': 'no-cache',
+        'Pragma': 'no-cache'
+      }
     });
     return response.status === 200;
   } catch (error) {
     console.log(`Connectivity test failed for ${url}:`, error);
     return false;
   }
+};
+
+// Find the best available API URL
+const findBestApiUrl = async (): Promise<string> => {
+  console.log('Finding best API URL...');
+  
+  // Test URLs in order of preference
+  const urlsToTest = [
+    RAILWAY_API_URL,
+    PC_LOCAL_URL,
+    Platform.OS === 'android' ? LOCAL_API_URL : LOCALHOST_API_URL
+  ];
+  
+  for (const url of urlsToTest) {
+    console.log(`Testing ${url}...`);
+    if (await testConnectivity(url)) {
+      console.log(`✅ Found working API: ${url}`);
+      currentApiUrl = url;
+      API_URL = url;
+      return url;
+    }
+  }
+  
+  console.log('❌ No working API found, using Railway as fallback');
+  currentApiUrl = RAILWAY_API_URL;
+  API_URL = RAILWAY_API_URL;
+  return RAILWAY_API_URL;
+};
+
+// Network retry utility with exponential backoff
+const retryWithBackoff = async <T>(
+  operation: () => Promise<T>,
+  maxRetries: number = 3,
+  baseDelay: number = 1000
+): Promise<T> => {
+  let lastError: any;
+  
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      // Check network connectivity before each attempt
+      const netInfo = await NetInfo.fetch();
+      if (!netInfo.isConnected) {
+        throw new Error('No internet connection available');
+      }
+      
+      return await operation();
+    } catch (error) {
+      lastError = error;
+      console.log(`Attempt ${attempt + 1}/${maxRetries + 1} failed:`, error);
+      
+      if (attempt < maxRetries) {
+        const delay = baseDelay * Math.pow(2, attempt); // Exponential backoff
+        console.log(`Waiting ${delay}ms before retry...`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
+    }
+  }
+  
+  throw lastError;
+};
+
+// Enhanced error message generator
+const getNetworkErrorMessage = (error: any): string => {
+  if (axios.isAxiosError(error)) {
+    if (error.code === 'NETWORK_ERROR' || error.message.includes('Network Error')) {
+      return 'Network connection failed. Please check your internet connection and try again.';
+    }
+    if (error.code === 'ECONNABORTED' || error.message.includes('timeout')) {
+      return 'Request timed out. Please check your connection and try again.';
+    }
+    if (error.response?.status === 500) {
+      return 'Server error occurred. Please try again later.';
+    }
+    if (error.response?.status === 404) {
+      return 'Service not found. Please update the app or try again later.';
+    }
+  }
+  return error.message || 'An unexpected error occurred. Please try again.';
 };
 
 // Types
@@ -97,6 +221,11 @@ export interface ChatbotResponse {
   response: string;
 }
 
+export interface ChatMessage {
+  role: 'user' | 'assistant';
+  content: string;
+}
+
 export interface DiseaseDetectionResponse {
   success: boolean;
   disease: {
@@ -135,64 +264,58 @@ export interface DashboardStatsResponse {
   last_updated: string;
 }
 
-// Get the best available API URL
+// Get the current API URL (with automatic discovery)
 export const getBestApiUrl = async (): Promise<string> => {
-  console.log('Testing connectivity to find best API URL...');
-  
-  // Test Railway first
-  if (await testConnectivity(RAILWAY_API_URL)) {
-    console.log('Railway API is available');
-    return RAILWAY_API_URL;
-  }
-  
-  // Test local APIs as fallback
-  const localUrl = Platform.OS === 'android' ? LOCAL_API_URL : LOCALHOST_API_URL;
-  if (await testConnectivity(localUrl)) {
-    console.log('Local API is available');
-    return localUrl;
-  }
-  
-  console.log('No API available, defaulting to Railway');
-  return RAILWAY_API_URL; // Default fallback
+  return await findBestApiUrl();
+};
+
+// Get current API URL without testing (for display purposes)
+export const getCurrentApiUrl = (): string => {
+  return currentApiUrl;
 };
 
 // API functions
 export const cropService = {
-  // Get crop recommendation
+  // Get crop recommendation with retry mechanism
   predictCrop: async (data: CropPredictionRequest): Promise<CropPredictionResponse> => {
-    try {
-      const response = await axios.post(`${API_URL}/predict`, data);
-      return response.data;
-    } catch (error) {
-      console.error('Error predicting crop:', error);
-      throw error;
-    }
-  },
-
-  // Get weather data
-  getWeather: async (data: WeatherRequest): Promise<WeatherResponse> => {
-    try {
-      const response = await axios.post(`${API_URL}/weather`, data);
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching weather:', error);
-      throw error;
-    }
-  },
-
-  // Send message to chatbot
-  sendChatMessage: async (data: ChatbotRequest): Promise<ChatbotResponse> => {
-    try {
-      const response = await axios.post(`${API_URL}/chatbot`, data, {
+    const apiUrl = await findBestApiUrl();
+    return retryWithBackoff(async () => {
+      const response = await axios.post(`${apiUrl}/predict`, data, {
+        timeout: 12000, // Reduced timeout for faster retry
         headers: {
           'Content-Type': 'application/json',
         },
       });
       return response.data;
-    } catch (error) {
-      console.error('Error sending chat message:', error);
-      throw error;
-    }
+    }, 2, 1500); // 2 retries with 1.5s base delay
+  },
+
+  // Get weather data with retry mechanism
+  getWeather: async (data: WeatherRequest): Promise<WeatherResponse> => {
+    const apiUrl = await findBestApiUrl();
+    return retryWithBackoff(async () => {
+      const response = await axios.post(`${apiUrl}/weather`, data, {
+        timeout: 12000, // Reduced timeout for faster retry
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      return response.data;
+    }, 2, 1500); // 2 retries with 1.5s base delay
+  },
+
+  // Send message to chatbot with retry mechanism
+  sendChatMessage: async (data: ChatbotRequest): Promise<ChatbotResponse> => {
+    const apiUrl = await findBestApiUrl();
+    return retryWithBackoff(async () => {
+      const response = await axios.post(`${apiUrl}/chatbot`, data, {
+        timeout: 15000, // 15 second timeout for chat
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      return response.data;
+    }, 2, 1000); // 2 retries with 1s base delay
   },
 
   // Upload image for disease detection with fallback mechanism
@@ -298,16 +421,44 @@ export const cropService = {
     }
   },
 
-  // Get dashboard statistics
+  // Get dashboard statistics with retry mechanism
   getDashboardStats: async (): Promise<DashboardStatsResponse> => {
-    try {
-      const response = await axios.get(`${API_URL}/dashboard-stats`, {
+    const apiUrl = await findBestApiUrl();
+    return retryWithBackoff(async () => {
+      const response = await axios.get(`${apiUrl}/dashboard-stats`, {
         timeout: 8000, // 8 second timeout
       });
       return response.data;
+    }, 1, 1000); // 1 retry with 1s delay for dashboard stats
+  },
+
+  // Check network connectivity
+  checkNetworkConnectivity: async (): Promise<boolean> => {
+    try {
+      const netInfo = await NetInfo.fetch();
+      return netInfo.isConnected ?? false;
     } catch (error) {
-      console.log('Dashboard stats unavailable, using fallback data');
-      throw error;
+      console.log('Error checking network connectivity:', error);
+      return false;
     }
+  },
+
+  // Get network error message
+  getNetworkErrorMessage,
+
+  // Test API connectivity
+  testApiConnectivity: async (): Promise<boolean> => {
+    const apiUrl = await findBestApiUrl();
+    return testConnectivity(apiUrl);
+  },
+
+  // Get current API URL info
+  getApiInfo: () => {
+    return {
+      currentUrl: currentApiUrl,
+      railwayUrl: RAILWAY_API_URL,
+      localUrl: Platform.OS === 'android' ? LOCAL_API_URL : LOCALHOST_API_URL,
+      pcLocalUrl: PC_LOCAL_URL
+    };
   },
 };

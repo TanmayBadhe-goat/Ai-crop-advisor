@@ -1,14 +1,16 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, Image, Alert, ScrollView } from 'react-native';
-import { Button, Card, Title, Paragraph, Text } from 'react-native-paper';
+import { Button, Card, Title, Paragraph, Text, Snackbar } from 'react-native-paper';
 import * as ImagePicker from 'expo-image-picker';
-import { cropService, DiseaseDetectionResponse, getBestApiUrl } from '../api/cropService';
-import { runNetworkDiagnostic, formatDiagnosticResults } from '../utils/networkDiagnostic';
+import { cropService, DiseaseDetectionResponse } from '../api/cropService';
 
 const DiseaseDetectionScreen = () => {
   const [image, setImage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<DiseaseDetectionResponse | null>(null);
+  const [networkConnected, setNetworkConnected] = useState(true);
+  const [snackbarVisible, setSnackbarVisible] = useState(false);
+  const [snackbarMessage, setSnackbarMessage] = useState('');
 
   const pickImage = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -54,34 +56,25 @@ const DiseaseDetectionScreen = () => {
   const testConnectivity = async () => {
     try {
       setLoading(true);
-      console.log('Running comprehensive network diagnostic...');
+      console.log('Testing API connectivity...');
       
-      const diagnosticResults = await runNetworkDiagnostic();
-      const report = formatDiagnosticResults(diagnosticResults);
+      const isConnected = await cropService.testApiConnectivity();
       
-      console.log('Network Diagnostic Results:', report);
-      
-      // Check if Railway API is working
-      const railwayResult = diagnosticResults.find(r => r.url.includes('railway'));
-      
-      if (railwayResult?.status === 'success') {
-        Alert.alert('✅ Connection Test Passed', 'Railway API is accessible. The disease detection should work.');
+      if (isConnected) {
+        Alert.alert('✅ Connection Test Passed', 'API is accessible. Disease detection should work.');
+        setSnackbarMessage('Connection test successful!');
+        setSnackbarVisible(true);
       } else {
-        Alert.alert(
-          '❌ Connection Test Failed', 
-          `Railway API is not accessible.\n\nError: ${railwayResult?.error}\n\nFull diagnostic report logged to console.`,
-          [
-            { text: 'OK', style: 'default' },
-            { 
-              text: 'View Details', 
-              onPress: () => Alert.alert('Network Diagnostic Report', report)
-            }
-          ]
-        );
+        Alert.alert('❌ Connection Test Failed', 'Unable to reach the API server. Please check your internet connection.');
+        setSnackbarMessage('Connection test failed. Check your network.');
+        setSnackbarVisible(true);
       }
     } catch (error: any) {
-      console.error('Diagnostic failed:', error);
-      Alert.alert('Diagnostic Failed', 'Unable to run network diagnostic. Please check your internet connection.');
+      console.error('Connectivity test failed:', error);
+      const errorMessage = cropService.getNetworkErrorMessage(error);
+      Alert.alert('Connection Test Failed', errorMessage);
+      setSnackbarMessage(errorMessage);
+      setSnackbarVisible(true);
     } finally {
       setLoading(false);
     }
@@ -93,36 +86,45 @@ const DiseaseDetectionScreen = () => {
       return;
     }
 
+    // Check network connectivity first
+    const isConnected = await cropService.checkNetworkConnectivity();
+    setNetworkConnected(isConnected);
+    
+    if (!isConnected) {
+      setSnackbarMessage('No internet connection. Please check your network.');
+      setSnackbarVisible(true);
+      return;
+    }
+
     try {
       setLoading(true);
       console.log('Starting image analysis...');
       const response = await cropService.detectDisease(image);
       console.log('Analysis complete:', response);
       setResult(response);
+      setSnackbarMessage('Analysis completed successfully!');
+      setSnackbarVisible(true);
     } catch (error: any) {
       console.error('Disease detection error:', error);
-      
-      let errorMessage = 'Failed to analyze image. Please try again.';
-      
-      if (error.message) {
-        if (error.message.includes('Network error')) {
-          errorMessage = 'Network error: Please check your internet connection and try again.';
-        } else if (error.message.includes('Server error')) {
-          errorMessage = 'Server error: The service is temporarily unavailable. Please try again later.';
-        } else if (error.message.includes('timeout')) {
-          errorMessage = 'Request timeout: The analysis is taking too long. Please try again.';
-        } else if (error.message.includes('Unable to connect')) {
-          errorMessage = 'Connection failed: Unable to reach the server. Please check your internet connection.';
-        } else {
-          errorMessage = error.message;
-        }
-      }
-      
+      const errorMessage = cropService.getNetworkErrorMessage(error);
       Alert.alert('Analysis Failed', errorMessage);
+      setSnackbarMessage(errorMessage);
+      setSnackbarVisible(true);
     } finally {
       setLoading(false);
     }
   };
+
+  // Check network connectivity periodically
+  useEffect(() => {
+    const checkConnectivity = async () => {
+      const isConnected = await cropService.checkNetworkConnectivity();
+      setNetworkConnected(isConnected);
+    };
+    
+    const interval = setInterval(checkConnectivity, 10000); // Check every 10 seconds
+    return () => clearInterval(interval);
+  }, []);
 
   return (
     <ScrollView style={styles.container}>
@@ -173,8 +175,8 @@ const DiseaseDetectionScreen = () => {
                   mode="contained"
                   onPress={analyzeImage}
                   loading={loading}
-                  disabled={loading}
-                  style={styles.analyzeButton}
+                  disabled={loading || !networkConnected}
+                  style={[styles.analyzeButton, !networkConnected && styles.disabledButton]}
                   icon="magnify"
                 >
                   Analyze Plant
@@ -236,7 +238,34 @@ const DiseaseDetectionScreen = () => {
             </Card.Content>
           </Card>
         )}
+
+        {/* Network status indicator */}
+        {!networkConnected && (
+          <Card style={styles.networkCard}>
+            <Card.Content>
+              <Text style={styles.networkText}>📶 Network Status: Offline</Text>
+              <Text style={styles.networkSubtext}>Please check your internet connection</Text>
+            </Card.Content>
+          </Card>
+        )}
       </View>
+      
+      <Snackbar
+        visible={snackbarVisible}
+        onDismiss={() => setSnackbarVisible(false)}
+        duration={4000}
+        action={{
+          label: 'Retry',
+          onPress: () => {
+            setSnackbarVisible(false);
+            if (image) {
+              analyzeImage();
+            }
+          },
+        }}
+      >
+        {snackbarMessage}
+      </Snackbar>
     </ScrollView>
   );
 };
@@ -384,6 +413,24 @@ const styles = StyleSheet.create({
   },
   infoValue: {
     color: '#555',
+  },
+  disabledButton: {
+    backgroundColor: '#CCCCCC',
+  },
+  networkCard: {
+    backgroundColor: '#FFF3E0',
+    marginTop: 12,
+    borderRadius: 8,
+  },
+  networkText: {
+    color: '#F57C00',
+    fontWeight: 'bold',
+    fontSize: 14,
+  },
+  networkSubtext: {
+    color: '#FF8F00',
+    fontSize: 12,
+    marginTop: 4,
   },
 });
 
