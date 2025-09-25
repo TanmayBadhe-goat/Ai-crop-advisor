@@ -17,11 +17,14 @@ console.log('Using API URL:', API_URL);
 console.log('Platform:', Platform.OS);
 
 // Configure axios defaults for mobile data optimization
-axios.defaults.timeout = 15000; // Reduced to 15 seconds for faster fallback
+axios.defaults.timeout = 20000; // Increased timeout for mobile hotspot connections
 axios.defaults.headers.common['User-Agent'] = `KrishiMitra-Mobile/${Platform.OS}`;
 axios.defaults.headers.common['Cache-Control'] = 'no-cache';
 axios.defaults.headers.common['Pragma'] = 'no-cache';
 axios.defaults.headers.common['Connection'] = 'keep-alive';
+// Additional headers for mobile hotspot compatibility
+axios.defaults.headers.common['Accept'] = 'application/json, text/plain, */*';
+axios.defaults.headers.common['Accept-Encoding'] = 'gzip, deflate, br';
 
 // Add request interceptor for better mobile data handling
 axios.interceptors.request.use(
@@ -59,7 +62,7 @@ const testConnectivity = async (url: string): Promise<boolean> => {
     }
 
     const response = await axios.get(`${url}/dashboard-stats`, {
-      timeout: 5000, // Reduced timeout for faster fallback
+      timeout: 8000, // Increased timeout for mobile hotspot connectivity
       headers: {
         'Cache-Control': 'no-cache',
         'Pragma': 'no-cache'
@@ -281,7 +284,7 @@ export const cropService = {
     const apiUrl = await findBestApiUrl();
     return retryWithBackoff(async () => {
       const response = await axios.post(`${apiUrl}/predict`, data, {
-        timeout: 12000, // Reduced timeout for faster retry
+        timeout: 18000, // Increased timeout for mobile hotspot connections
         headers: {
           'Content-Type': 'application/json',
         },
@@ -295,7 +298,7 @@ export const cropService = {
     const apiUrl = await findBestApiUrl();
     return retryWithBackoff(async () => {
       const response = await axios.post(`${apiUrl}/weather`, data, {
-        timeout: 12000, // Reduced timeout for faster retry
+        timeout: 18000, // Increased timeout for mobile hotspot connections
         headers: {
           'Content-Type': 'application/json',
         },
@@ -344,7 +347,7 @@ export const cropService = {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
-        timeout: 15000, // Reduced timeout for faster fallback
+        timeout: 20000, // Increased timeout for mobile hotspot connections
       });
 
       console.log('Image upload response:', uploadResponse.data);
@@ -362,7 +365,7 @@ export const cropService = {
         headers: {
           'Content-Type': 'application/json',
         },
-        timeout: 15000, // Reduced timeout for faster fallback
+        timeout: 20000, // Increased timeout for mobile hotspot connections
       });
 
       console.log('Disease detection response:', diseaseResponse.data);
