@@ -23,9 +23,11 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 GEMINI_API_KEY = os.environ.get('Gemini_API_key')
 WEATHER_API_KEY = os.environ.get('Weather_API_key')
+GEMINI_MODEL = os.environ.get('GEMINI_MODEL', 'gemini-1.5-flash')
 
 # Configure Gemini
 genai.configure(api_key=GEMINI_API_KEY)
+logger.info(f"Gemini API configured: {'Yes' if bool(GEMINI_API_KEY) else 'No'} | Model: {GEMINI_MODEL}")
 
 # Combined training data (corrected - all arrays have 30 elements)
 training_data = {
@@ -221,9 +223,34 @@ def generate_agricultural_advisory(weather_data):
 def home():
     return jsonify({'message': 'KrishiMitra API Running', 'status': 'OK'})
 
+@app.route('/api', methods=['GET'])
+def api_index():
+    """Simple API index to help verify routing in production."""
+    return jsonify({
+        'service': 'KrishiMitra API',
+        'status': 'OK',
+        'endpoints': [
+            'GET /api',
+            'GET /api/health',
+            'POST /api/predict',
+            'POST /api/chatbot',
+            'POST /api/weather',
+            'POST /api/upload-image',
+            'POST /api/disease-detection',
+            'GET /api/dashboard-stats',
+            'GET /api/crop-calendar',
+            'GET /api/crop-calendar/month/<int:month>'
+        ]
+    })
+
 @app.route('/api/health', methods=['GET'])
 def api_health():
     return jsonify({'status': 'ok', 'service': 'KrishiMitra API'}), 200
+
+@app.route('/health', methods=['GET'])
+def root_health_alias():
+    """Alias for health check to handle proxies that strip the /api prefix."""
+    return jsonify({'status': 'ok', 'service': 'KrishiMitra API', 'alias': True}), 200
 
 @app.route('/api/predict', methods=['POST'])
 def predict():
@@ -267,7 +294,8 @@ def chatbot():
             logger.warning('Gemini API key missing; returning fallback reply')
             return jsonify({'success': True, 'response': 'I cannot access the assistant right now. Please try again later.'})
 
-        model_ai = genai.GenerativeModel('gemini-1.5-flash')
+        # Use model from environment to avoid unavailable version errors in some regions/projects
+        model_ai = genai.GenerativeModel(GEMINI_MODEL)
         style = 'Answer very concisely in 1-3 sentences.' if concise else 'Answer clearly and helpfully.'
         locale = f"Respond in language/locale: {lang}." if lang else ''
         prompt = f"You are a farming expert. {style} {locale} Question: {user_msg}"
