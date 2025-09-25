@@ -4,7 +4,7 @@ import NetInfo from '@react-native-community/netinfo';
 
 // Base URL for the backend API
 // Use Railway production URL for both development and production
-const RAILWAY_API_URL = 'https://web-production-af45d.up.railway.app/api';
+const RAILWAY_API_URL = 'web-production-d6596.up.railway.app/api';
 const LOCAL_API_URL = 'http://10.0.2.2:5000/api'; // Android emulator localhost
 const LOCALHOST_API_URL = 'http://localhost:5000/api'; // iOS simulator
 const PC_LOCAL_URL = 'http://192.168.29.153:5000/api'; // PC local network IP
