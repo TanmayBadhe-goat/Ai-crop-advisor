@@ -68,6 +68,13 @@ const DashboardScreen = ({ navigation }: any) => {
   const fetchDashboardStats = async () => {
     try {
       console.log('Fetching dashboard stats...');
+      // Quick health check to avoid unnecessary network errors when switching networks
+      const apiHealthy = await cropService.testApiConnectivity();
+      if (!apiHealthy) {
+        console.log('API health check failed. Using default stats without network call.');
+        setStats(defaultStats);
+        return;
+      }
       // Reduced timeout to prevent long waits
       const timeoutPromise = new Promise((_, reject) => 
         setTimeout(() => reject(new Error('Request timeout')), 3000)
