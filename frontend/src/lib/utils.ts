@@ -12,35 +12,61 @@ export const API_BASE_URL = API_CONFIG.BASE_URL;
 // API helper functions
 export const api = {
   async get(endpoint: string) {
-    const response = await fetch(`${API_BASE_URL}${endpoint}`);
+    const url = `${API_BASE_URL}${endpoint}`;
+    console.log('GET request to:', url);
+    
+    const response = await fetch(url);
     if (!response.ok) {
-      throw new Error(`API Error: ${response.status}`);
+      throw new Error(`API Error: ${response.status} - ${response.statusText}`);
     }
     return response.json();
   },
 
   async post(endpoint: string, data: any) {
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+    const url = `${API_BASE_URL}${endpoint}`;
+    console.log('POST request to:', url);
+    console.log('Request data:', data);
+    
+    const response = await fetch(url, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(data),
     });
+    
+    console.log('Response status:', response.status, response.statusText);
+    
     if (!response.ok) {
-      throw new Error(`API Error: ${response.status}`);
+      const errorText = await response.text();
+      console.error('Error response:', errorText);
+      throw new Error(`API Error: ${response.status} - ${response.statusText}`);
     }
-    return response.json();
+    
+    const result = await response.json();
+    console.log('Response data:', result);
+    return result;
   },
 
   async postFormData(endpoint: string, formData: FormData) {
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+    const url = `${API_BASE_URL}${endpoint}`;
+    console.log('POST FormData request to:', url);
+    
+    const response = await fetch(url, {
       method: 'POST',
       body: formData,
     });
+    
+    console.log('Response status:', response.status, response.statusText);
+    
     if (!response.ok) {
-      throw new Error(`API Error: ${response.status}`);
+      const errorText = await response.text();
+      console.error('Error response:', errorText);
+      throw new Error(`API Error: ${response.status} - ${response.statusText}`);
     }
-    return response.json();
+    
+    const result = await response.json();
+    console.log('Response data:', result);
+    return result;
   }
 };

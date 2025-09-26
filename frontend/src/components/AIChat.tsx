@@ -53,20 +53,38 @@ const AIChat = () => {
 
     try {
       // Call your Flask backend chatbot API
+      console.log('Sending message to API:', userMessage);
       const response = await api.post('/api/chatbot', {
         message: userMessage,
         lang: 'en-US',
         concise: true
       });
 
-      if (response.success) {
+      console.log('API response:', response);
+
+      if (response.success && response.response) {
         addMessage("bot", response.response);
       } else {
+        console.error('API returned unsuccessful response:', response);
         addMessage("bot", "Sorry, I couldn't process your request. Please try again.");
       }
     } catch (error) {
-      console.error('Chat error:', error);
-      addMessage("bot", "I'm having trouble connecting to the AI service. Please try again later.");
+      console.error('Chat error details:', error);
+      
+      // More specific error handling
+      if (error instanceof Error) {
+        if (error.message.includes('Failed to fetch') || error.message.includes('Network')) {
+          addMessage("bot", "I'm having trouble connecting to the server. Please check your internet connection and try again.");
+        } else if (error.message.includes('404')) {
+          addMessage("bot", "The AI service endpoint was not found. Please contact support.");
+        } else if (error.message.includes('500')) {
+          addMessage("bot", "The AI service is experiencing issues. Please try again in a few moments.");
+        } else {
+          addMessage("bot", "I'm having trouble connecting to the AI service. Please try again later.");
+        }
+      } else {
+        addMessage("bot", "An unexpected error occurred. Please try again.");
+      }
     } finally {
       setIsLoading(false);
     }
