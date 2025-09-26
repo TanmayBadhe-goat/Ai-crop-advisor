@@ -6,7 +6,7 @@ services:
     startCommand: gunicorn --bind 0.0.0.0:$PORT app:app
     envVars:
       - key: PYTHON_VERSION
-        value: 3.11.7
+        value: 3.11.9
       - key: Gemini_API_key
         sync: false
       - key: Weather_API_key
