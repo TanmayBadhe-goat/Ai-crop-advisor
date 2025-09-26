@@ -14,17 +14,23 @@ import pandas as pd
 import numpy as np
 import random
 import datetime
-from dotenv import load_dotenv
-
-# Load environment variables from .env file
-load_dotenv()
 
 app = Flask(__name__)
 CORS(app)
 
-# Configure logging
+# Configure logging first
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+# Load environment variables from .env file (optional for production)
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+    logger.info("Environment variables loaded from .env file")
+except ImportError:
+    logger.info("python-dotenv not available, using system environment variables")
+except Exception as e:
+    logger.warning(f"Could not load .env file: {e}")
 
 # API Keys
 GEMINI_API_KEY = os.environ.get('Gemini_API_key', 'AIzaSyD8Vb3TXMsoWVC9FAzBmdOXdhTHogBZeXk')
@@ -56,16 +62,24 @@ training_data = {
     ]
 }
 
-df = pd.DataFrame(training_data)
-X = df[['N', 'P', 'K', 'temperature', 'humidity', 'ph', 'rainfall']]
-y = df['label']
+# Initialize ML model with error handling
+try:
+    df = pd.DataFrame(training_data)
+    X = df[['N', 'P', 'K', 'temperature', 'humidity', 'ph', 'rainfall']]
+    y = df['label']
 
-scaler = StandardScaler()
-X_scaled = scaler.fit_transform(X)
-model = RandomForestClassifier(n_estimators=100, random_state=42)
-model.fit(X_scaled, y)
+    scaler = StandardScaler()
+    X_scaled = scaler.fit_transform(X)
+    model = RandomForestClassifier(n_estimators=100, random_state=42)
+    model.fit(X_scaled, y)
 
-logger.info(f"Model trained with accuracy: {model.score(X_scaled, y):.2%}")
+    logger.info(f"Model trained with accuracy: {model.score(X_scaled, y):.2%}")
+    ML_MODEL_AVAILABLE = True
+except Exception as e:
+    logger.error(f"Failed to initialize ML model: {e}")
+    ML_MODEL_AVAILABLE = False
+    scaler = None
+    model = None
 
 # Combined crop database (enhanced info from both)
 crop_database = {
@@ -403,13 +417,33 @@ def home():
         'status': 'OK',
         'gemini_configured': bool(GEMINI_API_KEY),
         'weather_configured': bool(WEATHER_API_KEY),
-        'gemini_model': GEMINI_MODEL
+        'gemini_model': GEMINI_MODEL,
+        'ml_model_available': ML_MODEL_AVAILABLE,
+        'timestamp': datetime.datetime.now().isoformat()
+    })
+
+@app.route('/health', methods=['GET'])
+def health_check():
+    """Detailed health check endpoint"""
+    return jsonify({
+        'status': 'healthy',
+        'services': {
+            'gemini_ai': bool(GEMINI_API_KEY),
+            'weather_api': bool(WEATHER_API_KEY),
+            'ml_model': ML_MODEL_AVAILABLE,
+            'analytics': True
+        },
+        'timestamp': datetime.datetime.now().isoformat()
     })
 
 @app.route('/api/predict', methods=['POST'])
 def predict():
     data = request.json
     try:
+        # Check if ML model is available
+        if not ML_MODEL_AVAILABLE or not model or not scaler:
+            return jsonify({'success': False, 'error': 'ML model not available'}), 503
+            
         required = ['nitrogen', 'phosphorus', 'potassium', 'temperature', 'humidity', 'ph', 'rainfall']
         features = []
         for field in required:
@@ -636,4 +670,8 @@ def handler(event, context):
 # For local development and other deployments
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
+    logger.info(f"Starting KrishiMitra API on port {port}")
+    logger.info(f"Gemini API configured: {bool(GEMINI_API_KEY)}")
+    logger.info(f"Weather API configured: {bool(WEATHER_API_KEY)}")
+    logger.info(f"ML Model available: {ML_MODEL_AVAILABLE}")
     app.run(debug=True, host='0.0.0.0', port=port)
