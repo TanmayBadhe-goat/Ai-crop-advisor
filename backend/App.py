@@ -25,7 +25,7 @@ logger = logging.getLogger(__name__)
 # API Keys
 GEMINI_API_KEY = os.environ.get('Gemini_API_key')
 WEATHER_API_KEY = os.environ.get('Weather_API_key')
-GEMINI_MODEL = os.environ.get('GEMINI_MODEL', 'gemini-pro')
+GEMINI_MODEL = os.environ.get('GEMINI_MODEL', 'gemini-1.5-flash')
 
 # Configure Gemini
 try:
@@ -275,37 +275,29 @@ def chatbot():
             logger.warning('Gemini API key missing; returning fallback reply')
             return jsonify({'success': True, 'response': 'I cannot access the assistant right now. Please try again later.'})
 
-        # Try with configured model first
-        try:
-            model_ai = genai.GenerativeModel(GEMINI_MODEL)
-            style = 'Answer very concisely in 1-3 sentences.' if concise else 'Answer clearly and helpfully.'
-            locale = f"Respond in language/locale: {lang}." if lang else ''
-            prompt = f"You are a farming expert. {style} {locale} Question: {user_msg}"
-            resp = model_ai.generate_content(prompt)
-            text = (resp.text or '').strip()
-            if not text:
-                text = 'Sorry, I could not generate a response.'
-            return jsonify({'success': True, 'response': text, 'lang': lang, 'concise': concise})
-        except Exception as model_error:
-            logger.warning(f"Model {GEMINI_MODEL} failed: {model_error}")
-            # Fallback to gemini-pro if configured model fails
-            if GEMINI_MODEL != 'gemini-pro':
-                try:
-                    logger.info("Falling back to gemini-pro model")
-                    model_ai = genai.GenerativeModel('gemini-pro')
-                    style = 'Answer very concisely in 1-3 sentences.' if concise else 'Answer clearly and helpfully.'
-                    locale = f"Respond in language/locale: {lang}." if lang else ''
-                    prompt = f"You are a farming expert. {style} {locale} Question: {user_msg}"
-                    resp = model_ai.generate_content(prompt)
-                    text = (resp.text or '').strip()
-                    if not text:
-                        text = 'Sorry, I could not generate a response.'
-                    return jsonify({'success': True, 'response': text, 'lang': lang, 'concise': concise})
-                except Exception as fallback_error:
-                    logger.error(f"Fallback model also failed: {fallback_error}")
-                    raise model_error
-            else:
-                raise model_error
+        # Try multiple models in sequence
+        models_to_try = [GEMINI_MODEL, 'gemini-pro', 'gemini-1.5-flash', 'models/gemini-pro']
+        
+        for model_name in models_to_try:
+            try:
+                logger.info(f"Trying model: {model_name}")
+                model_ai = genai.GenerativeModel(model_name)
+                style = 'Answer very concisely in 1-3 sentences.' if concise else 'Answer clearly and helpfully.'
+                locale = f"Respond in language/locale: {lang}." if lang else ''
+                prompt = f"You are a farming expert. {style} {locale} Question: {user_msg}"
+                resp = model_ai.generate_content(prompt)
+                text = (resp.text or '').strip()
+                if not text:
+                    text = 'Sorry, I could not generate a response.'
+                logger.info(f"Successfully used model: {model_name}")
+                return jsonify({'success': True, 'response': text, 'lang': lang, 'concise': concise})
+            except Exception as model_error:
+                logger.warning(f"Model {model_name} failed: {model_error}")
+                continue
+        
+        # If all models failed
+        logger.error("All Gemini models failed")
+        raise Exception("All available models failed")
     except Exception as e:
         logger.error(f"Chatbot error: {e}")
         return jsonify({'success': True, 'response': 'I apologize, but I\'m having trouble connecting to the AI service right now. Please try again in a moment, or consult with local farming experts for immediate assistance.'})
