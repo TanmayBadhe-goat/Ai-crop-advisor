@@ -45,10 +45,15 @@ class AnalyticsManager:
         }
     
     def save_analytics(self):
-        """Save analytics data to file"""
-        self.data["last_updated"] = datetime.now().isoformat()
-        with open(self.analytics_file, 'w') as f:
-            json.dump(self.data, f, indent=2)
+        """Save analytics data to file (skip if filesystem is read-only)"""
+        try:
+            self.data["last_updated"] = datetime.now().isoformat()
+            with open(self.analytics_file, 'w') as f:
+                json.dump(self.data, f, indent=2)
+        except (OSError, PermissionError) as e:
+            # Skip saving in read-only environments like Railway
+            print(f"Warning: Could not save analytics data: {e}")
+            pass
     
     def record_prediction(self, crop, confidence, success=True):
         """Record a new prediction"""
