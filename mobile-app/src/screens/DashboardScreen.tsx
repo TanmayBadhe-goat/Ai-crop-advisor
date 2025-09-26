@@ -68,13 +68,6 @@ const DashboardScreen = ({ navigation }: any) => {
   const fetchDashboardStats = async () => {
     try {
       console.log('Fetching dashboard stats...');
-      // Quick health check to avoid unnecessary network errors when switching networks
-      const apiHealthy = await cropService.testApiConnectivity();
-      if (!apiHealthy) {
-        console.log('API health check failed. Using default stats without network call.');
-        setStats(defaultStats);
-        return;
-      }
       // Reduced timeout to prevent long waits
       const timeoutPromise = new Promise((_, reject) => 
         setTimeout(() => reject(new Error('Request timeout')), 3000)
@@ -293,7 +286,6 @@ const DashboardScreen = ({ navigation }: any) => {
               { title: t('navigation.diseaseDetection'), icon: 'camera-plus', screen: 'DiseaseDetection' },
               { title: t('navigation.aiAssistant'), icon: 'robot', screen: 'Chatbot' },
               { title: t('navigation.cropCalendar'), icon: 'calendar', screen: 'CropCalendar' },
-              { title: 'Business Model', icon: 'office-building', screen: 'BusinessModel' },
               { title: t('navigation.community'), icon: 'account-group', screen: 'Community' },
               { title: t('navigation.settings'), icon: 'cog', screen: 'Settings' },
             ].map((item, index) => (
@@ -486,8 +478,8 @@ const styles = StyleSheet.create({
   },
   header: {
     backgroundColor: '#4CAF50',
-    paddingTop: 20,
-    paddingBottom: 25,
+    paddingTop: 50,
+    paddingBottom: 30,
     paddingHorizontal: 20,
     borderBottomLeftRadius: 25,
     borderBottomRightRadius: 25,

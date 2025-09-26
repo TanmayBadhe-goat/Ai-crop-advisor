@@ -11,7 +11,6 @@ import FarmAssistantScreen from '../screens/FarmAssistantScreen';
 import CropCalendarScreen from '../screens/CropCalendarScreen';
 import SettingsScreen from '../screens/SettingsScreen';
 import CommunityScreen from '../screens/CommunityScreen';
-import BusinessModelScreen from '../screens/BusinessModelScreen';
 
 // Define the parameter types for the stack navigator
 export type RootStackParamList = {
@@ -23,7 +22,6 @@ export type RootStackParamList = {
   Chatbot: undefined;
   CropCalendar: undefined;
   Community: undefined;
-  BusinessModel: undefined;
   Settings: undefined;
 };
 
@@ -115,17 +113,6 @@ const AppNavigator = () => {
           options={{ 
             headerShown: true,
             title: 'Community',
-            headerStyle: { backgroundColor: '#4CAF50' },
-            headerTintColor: '#fff',
-            headerTitleStyle: { fontWeight: 'bold' }
-          }}
-        />
-        <Stack.Screen 
-          name="BusinessModel" 
-          component={BusinessModelScreen} 
-          options={{ 
-            headerShown: true,
-            title: 'Business Model',
             headerStyle: { backgroundColor: '#4CAF50' },
             headerTintColor: '#fff',
             headerTitleStyle: { fontWeight: 'bold' }

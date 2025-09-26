@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, ScrollView, ActivityIndicator, Alert } from 'react-native';
-import { Card, Title, Paragraph, Text, Button, Snackbar } from 'react-native-paper';
+import { View, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
+import { Card, Title, Paragraph, Text, Button } from 'react-native-paper';
 import * as Location from 'expo-location';
 import { cropService, WeatherResponse } from '../api/cropService';
 
@@ -10,27 +10,12 @@ const WeatherInfoScreen = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<string | null>(null);
-  const [networkConnected, setNetworkConnected] = useState(true);
-  const [snackbarVisible, setSnackbarVisible] = useState(false);
-  const [snackbarMessage, setSnackbarMessage] = useState('');
 
   const getLocationAndWeather = async () => {
     setLoading(true);
     setError(null);
     
     try {
-      // Check network connectivity first
-      const isConnected = await cropService.checkNetworkConnectivity();
-      setNetworkConnected(isConnected);
-      
-      if (!isConnected) {
-        setError('No internet connection available. Please check your network settings.');
-        setSnackbarMessage('No internet connection');
-        setSnackbarVisible(true);
-        setLoading(false);
-        return;
-      }
-      
       const { status } = await Location.requestForegroundPermissionsAsync();
       
       if (status !== 'granted') {
@@ -42,7 +27,7 @@ const WeatherInfoScreen = () => {
       const location = await Location.getCurrentPositionAsync({});
       setLocation(location);
       
-      // Get weather data with improved error handling
+      // Get weather data
       const weatherData = await cropService.getWeather({
         latitude: location.coords.latitude,
         longitude: location.coords.longitude
@@ -115,26 +100,12 @@ const WeatherInfoScreen = () => {
         setLastUpdated(new Date().toLocaleTimeString());
       }
     } catch (error) {
-      console.error('Weather fetch error:', error);
-      const errorMessage = cropService.getNetworkErrorMessage(error);
-      setError(errorMessage);
-      setSnackbarMessage(errorMessage);
-      setSnackbarVisible(true);
+      console.error(error);
+      setError('Failed to fetch weather information');
     } finally {
       setLoading(false);
     }
   };
-
-  // Check network connectivity periodically
-  useEffect(() => {
-    const checkConnectivity = async () => {
-      const isConnected = await cropService.checkNetworkConnectivity();
-      setNetworkConnected(isConnected);
-    };
-    
-    const interval = setInterval(checkConnectivity, 10000); // Check every 10 seconds
-    return () => clearInterval(interval);
-  }, []);
 
   useEffect(() => {
     getLocationAndWeather();
@@ -287,16 +258,6 @@ const WeatherInfoScreen = () => {
           </Card>
         )}
 
-        {/* Network status indicator */}
-        {!networkConnected && (
-          <Card style={styles.networkCard}>
-            <Card.Content>
-              <Text style={styles.networkText}>📶 Network Status: Offline</Text>
-              <Text style={styles.networkSubtext}>Please check your internet connection</Text>
-            </Card.Content>
-          </Card>
-        )}
-
         {/* Always show a refresh button at the bottom for convenience */}
         {!loading && (
           <Button 
@@ -304,27 +265,11 @@ const WeatherInfoScreen = () => {
             onPress={getLocationAndWeather}
             style={{ marginTop: 8 }}
             icon="refresh"
-            disabled={!networkConnected}
           >
             Refresh Weather
           </Button>
         )}
       </View>
-      
-      <Snackbar
-        visible={snackbarVisible}
-        onDismiss={() => setSnackbarVisible(false)}
-        duration={4000}
-        action={{
-          label: 'Retry',
-          onPress: () => {
-            setSnackbarVisible(false);
-            getLocationAndWeather();
-          },
-        }}
-      >
-        {snackbarMessage}
-      </Snackbar>
     </ScrollView>
   );
 };
@@ -521,21 +466,6 @@ const styles = StyleSheet.create({
   },
   weatherButton: {
     backgroundColor: '#4CAF50',
-  },
-  networkCard: {
-    backgroundColor: '#FFF3E0',
-    marginBottom: 12,
-    borderRadius: 8,
-  },
-  networkText: {
-    color: '#F57C00',
-    fontWeight: 'bold',
-    fontSize: 14,
-  },
-  networkSubtext: {
-    color: '#FF8F00',
-    fontSize: 12,
-    marginTop: 4,
   },
 });
 

@@ -16,15 +16,6 @@ interface CropSeason {
   color: string;
 }
 
-interface CalendarEvent {
-  id: string;
-  title: string;
-  date: string;
-  type: "sowing" | "irrigation" | "fertilizer" | "harvest";
-  crop: string;
-  description: string;
-}
-
 const CropCalendarScreen = ({ navigation }: any) => {
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
   const [selectedSeason, setSelectedSeason] = useState<'All' | 'Kharif' | 'Rabi' | 'Zaid'>('All');
@@ -152,61 +143,6 @@ const CropCalendarScreen = ({ navigation }: any) => {
 
   const { cropsToPlant, cropsToHarvest } = getCurrentMonthActivity();
 
-  const upcomingEvents: CalendarEvent[] = [
-    {
-      id: "1",
-      title: "Rice Transplanting",
-      date: "Tomorrow",
-      type: "sowing",
-      crop: "Rice",
-      description: "Optimal time for rice transplanting in Kharif season"
-    },
-    {
-      id: "2",
-      title: "Wheat Irrigation",
-      date: "In 3 days",
-      type: "irrigation",
-      crop: "Wheat",
-      description: "Second irrigation recommended for wheat crop"
-    },
-    {
-      id: "3",
-      title: "Cotton Fertilizer",
-      date: "In 5 days",
-      type: "fertilizer",
-      crop: "Cotton",
-      description: "Apply NPK fertilizer for cotton flowering stage"
-    },
-    {
-      id: "4",
-      title: "Tomato Harvest",
-      date: "In 1 week",
-      type: "harvest",
-      crop: "Tomato",
-      description: "First harvest of tomato crop ready"
-    }
-  ];
-
-  const getEventIcon = (type: string) => {
-    switch (type) {
-      case "sowing": return "seed";
-      case "irrigation": return "water";
-      case "fertilizer": return "nutrition";
-      case "harvest": return "scissors-cutting";
-      default: return "calendar";
-    }
-  };
-
-  const getEventColor = (type: string) => {
-    switch (type) {
-      case "sowing": return "#4CAF50";
-      case "irrigation": return "#2196F3";
-      case "fertilizer": return "#FF9800";
-      case "harvest": return "#F44336";
-      default: return "#666";
-    }
-  };
-
   return (
     <ScrollView style={styles.container}>
       <View style={styles.content}>
@@ -293,7 +229,7 @@ const CropCalendarScreen = ({ navigation }: any) => {
             {cropsToHarvest.length > 0 && (
               <View style={styles.activitySection}>
                 <View style={styles.activityHeader}>
-                  <MaterialCommunityIcons name="scissors-cutting" size={20} color="#FF9800" />
+                  <MaterialCommunityIcons name="harvest" size={20} color="#FF9800" />
                   <Text style={styles.activityTitle}>Time to Harvest</Text>
                 </View>
                 <View style={styles.cropList}>
@@ -321,45 +257,6 @@ const CropCalendarScreen = ({ navigation }: any) => {
           </Card.Content>
         </Card>
 
-        {/* Upcoming Events */}
-        <Card style={styles.sectionCard}>
-          <Card.Content>
-            <Title style={styles.sectionTitle}>Upcoming Activities</Title>
-            <Paragraph style={styles.description}>
-              Personalized farming schedule based on your crops and location
-            </Paragraph>
-            
-            <View style={styles.eventsContainer}>
-              {upcomingEvents.map((event) => (
-                <View key={event.id} style={styles.eventCard}>
-                  <View style={[styles.eventIcon, { backgroundColor: `${getEventColor(event.type)}20` }]}>
-                    <MaterialCommunityIcons 
-                      name={getEventIcon(event.type) as any} 
-                      size={20} 
-                      color={getEventColor(event.type)} 
-                    />
-                  </View>
-                  
-                  <View style={styles.eventContent}>
-                    <View style={styles.eventHeader}>
-                      <Text style={styles.eventTitle}>{event.title}</Text>
-                      <View style={styles.eventCropBadge}>
-                        <Text style={styles.eventCropText}>{event.crop}</Text>
-                      </View>
-                    </View>
-                    <Text style={styles.eventDescription}>{event.description}</Text>
-                  </View>
-                  
-                  <View style={styles.eventDate}>
-                    <Text style={styles.eventDateText}>{event.date}</Text>
-                    <Text style={styles.eventTypeText}>{event.type}</Text>
-                  </View>
-                </View>
-              ))}
-            </View>
-          </Card.Content>
-        </Card>
-
         {/* All Crops */}
         <Card style={styles.sectionCard}>
           <Card.Content>
@@ -384,7 +281,7 @@ const CropCalendarScreen = ({ navigation }: any) => {
                         </Text>
                       </View>
                       <View style={styles.cropDetailRow}>
-                        <MaterialCommunityIcons name="scissors-cutting" size={16} color="#FF9800" />
+                        <MaterialCommunityIcons name="harvest" size={16} color="#FF9800" />
                         <Text style={styles.cropDetailText}>
                           Harvest: {crop.harvestMonths.join(', ')}
                         </Text>
@@ -586,75 +483,6 @@ const styles = StyleSheet.create({
   },
   bottomSpacing: {
     height: 20,
-  },
-  description: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 16,
-  },
-  eventsContainer: {
-    gap: 12,
-  },
-  eventCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 12,
-    backgroundColor: 'white',
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
-    elevation: 1,
-  },
-  eventIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 12,
-  },
-  eventContent: {
-    flex: 1,
-  },
-  eventHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 4,
-  },
-  eventTitle: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#333',
-    flex: 1,
-  },
-  eventCropBadge: {
-    backgroundColor: '#F0F0F0',
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 12,
-    marginLeft: 8,
-  },
-  eventCropText: {
-    fontSize: 10,
-    color: '#666',
-  },
-  eventDescription: {
-    fontSize: 12,
-    color: '#666',
-  },
-  eventDate: {
-    alignItems: 'flex-end',
-  },
-  eventDateText: {
-    fontSize: 12,
-    fontWeight: '500',
-    color: '#4CAF50',
-  },
-  eventTypeText: {
-    fontSize: 10,
-    color: '#666',
-    marginTop: 2,
-    textTransform: 'capitalize',
   },
 });
 

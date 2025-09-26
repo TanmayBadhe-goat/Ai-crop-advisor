@@ -31,7 +31,7 @@ const CommunityScreen = ({ navigation }: any) => {
       avatar: '👨‍🌾',
       location: 'Punjab, India',
       timeAgo: '2 hours ago',
-      content: 'Just harvested my wheat crop using the recommendations from KrishiMitra! Got 15% better yield than last year. The weather alerts really helped me time the harvest perfectly.',
+      content: 'Just harvested my wheat crop using the recommendations from CropAI! Got 15% better yield than last year. The weather alerts really helped me time the harvest perfectly.',
       likes: 24,
       comments: 8,
       tags: ['wheat', 'harvest', 'success'],
@@ -186,7 +186,7 @@ const CommunityScreen = ({ navigation }: any) => {
               
               {getFilteredPosts().slice(0, 3).map((post) => (
                 <Card key={post.id} style={styles.postCard}>
-                  <Card.Content style={styles.postCardContent}>
+                  <Card.Content>
                     <View style={styles.postHeader}>
                       <View style={styles.authorInfo}>
                         <Text style={styles.authorAvatar}>{post.avatar}</Text>
@@ -345,10 +345,6 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     backgroundColor: '#FAFAFA',
   },
-  postCardContent: {
-    paddingVertical: 16,
-    paddingHorizontal: 16,
-  },
   postHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -371,13 +367,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
     color: '#333',
-    lineHeight: 20,
   },
   postLocation: {
     fontSize: 12,
     color: '#666',
     marginTop: 2,
-    lineHeight: 16,
   },
   categoryBadge: {
     paddingHorizontal: 8,
@@ -391,11 +385,8 @@ const styles = StyleSheet.create({
   postContent: {
     fontSize: 14,
     color: '#333',
-    lineHeight: 22,
+    lineHeight: 20,
     marginBottom: 12,
-    textAlign: 'left',
-    paddingVertical: 8,
-    paddingHorizontal: 4,
   },
   postTags: {
     flexDirection: 'row',
@@ -422,15 +413,12 @@ const styles = StyleSheet.create({
   actionButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 8,
-    paddingHorizontal: 12,
+    paddingVertical: 4,
   },
   actionText: {
     fontSize: 12,
     color: '#666',
     marginLeft: 4,
-    lineHeight: 16,
   },
   fab: {
     position: 'absolute',

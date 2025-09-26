@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { View, StyleSheet, Image, Alert, ScrollView } from 'react-native';
-import { Button, Card, Title, Paragraph, Text, Snackbar } from 'react-native-paper';
+import { Button, Card, Title, Paragraph, Text } from 'react-native-paper';
 import * as ImagePicker from 'expo-image-picker';
 import { cropService, DiseaseDetectionResponse } from '../api/cropService';
 
@@ -8,9 +8,6 @@ const DiseaseDetectionScreen = () => {
   const [image, setImage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<DiseaseDetectionResponse | null>(null);
-  const [networkConnected, setNetworkConnected] = useState(true);
-  const [snackbarVisible, setSnackbarVisible] = useState(false);
-  const [snackbarMessage, setSnackbarMessage] = useState('');
 
   const pickImage = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -53,46 +50,9 @@ const DiseaseDetectionScreen = () => {
     }
   };
 
-  const testConnectivity = async () => {
-    try {
-      setLoading(true);
-      console.log('Testing API connectivity...');
-      
-      const isConnected = await cropService.testApiConnectivity();
-      
-      if (isConnected) {
-        Alert.alert('✅ Connection Test Passed', 'API is accessible. Disease detection should work.');
-        setSnackbarMessage('Connection test successful!');
-        setSnackbarVisible(true);
-      } else {
-        Alert.alert('❌ Connection Test Failed', 'Unable to reach the API server. Please check your internet connection.');
-        setSnackbarMessage('Connection test failed. Check your network.');
-        setSnackbarVisible(true);
-      }
-    } catch (error: any) {
-      console.error('Connectivity test failed:', error);
-      const errorMessage = cropService.getNetworkErrorMessage(error);
-      Alert.alert('Connection Test Failed', errorMessage);
-      setSnackbarMessage(errorMessage);
-      setSnackbarVisible(true);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const analyzeImage = async () => {
     if (!image) {
       Alert.alert('No Image', 'Please select or take a photo first');
-      return;
-    }
-
-    // Check network connectivity first
-    const isConnected = await cropService.checkNetworkConnectivity();
-    setNetworkConnected(isConnected);
-    
-    if (!isConnected) {
-      setSnackbarMessage('No internet connection. Please check your network.');
-      setSnackbarVisible(true);
       return;
     }
 
@@ -102,29 +62,28 @@ const DiseaseDetectionScreen = () => {
       const response = await cropService.detectDisease(image);
       console.log('Analysis complete:', response);
       setResult(response);
-      setSnackbarMessage('Analysis completed successfully!');
-      setSnackbarVisible(true);
     } catch (error: any) {
       console.error('Disease detection error:', error);
-      const errorMessage = cropService.getNetworkErrorMessage(error);
+      
+      let errorMessage = 'Failed to analyze image. Please try again.';
+      
+      if (error.message) {
+        if (error.message.includes('Network error')) {
+          errorMessage = 'Network error: Please check your internet connection and try again.';
+        } else if (error.message.includes('Server error')) {
+          errorMessage = 'Server error: The service is temporarily unavailable. Please try again later.';
+        } else if (error.message.includes('timeout')) {
+          errorMessage = 'Request timeout: The analysis is taking too long. Please try again.';
+        } else {
+          errorMessage = error.message;
+        }
+      }
+      
       Alert.alert('Analysis Failed', errorMessage);
-      setSnackbarMessage(errorMessage);
-      setSnackbarVisible(true);
     } finally {
       setLoading(false);
     }
   };
-
-  // Check network connectivity periodically
-  useEffect(() => {
-    const checkConnectivity = async () => {
-      const isConnected = await cropService.checkNetworkConnectivity();
-      setNetworkConnected(isConnected);
-    };
-    
-    const interval = setInterval(checkConnectivity, 10000); // Check every 10 seconds
-    return () => clearInterval(interval);
-  }, []);
 
   return (
     <ScrollView style={styles.container}>
@@ -154,19 +113,6 @@ const DiseaseDetectionScreen = () => {
                 Gallery
               </Button>
             </View>
-            
-            <View style={styles.testButtonContainer}>
-              <Button 
-                mode="outlined" 
-                onPress={testConnectivity} 
-                style={styles.testButton}
-                icon="wifi"
-                loading={loading}
-                disabled={loading}
-              >
-                Test Connection
-              </Button>
-            </View>
 
             {image && (
               <View style={styles.imageContainer}>
@@ -175,8 +121,8 @@ const DiseaseDetectionScreen = () => {
                   mode="contained"
                   onPress={analyzeImage}
                   loading={loading}
-                  disabled={loading || !networkConnected}
-                  style={[styles.analyzeButton, !networkConnected && styles.disabledButton]}
+                  disabled={loading}
+                  style={styles.analyzeButton}
                   icon="magnify"
                 >
                   Analyze Plant
@@ -238,34 +184,7 @@ const DiseaseDetectionScreen = () => {
             </Card.Content>
           </Card>
         )}
-
-        {/* Network status indicator */}
-        {!networkConnected && (
-          <Card style={styles.networkCard}>
-            <Card.Content>
-              <Text style={styles.networkText}>📶 Network Status: Offline</Text>
-              <Text style={styles.networkSubtext}>Please check your internet connection</Text>
-            </Card.Content>
-          </Card>
-        )}
       </View>
-      
-      <Snackbar
-        visible={snackbarVisible}
-        onDismiss={() => setSnackbarVisible(false)}
-        duration={4000}
-        action={{
-          label: 'Retry',
-          onPress: () => {
-            setSnackbarVisible(false);
-            if (image) {
-              analyzeImage();
-            }
-          },
-        }}
-      >
-        {snackbarMessage}
-      </Snackbar>
     </ScrollView>
   );
 };
@@ -309,12 +228,6 @@ const styles = StyleSheet.create({
   },
   galleryButton: {
     backgroundColor: '#8BC34A',
-  },
-  testButtonContainer: {
-    marginBottom: 16,
-  },
-  testButton: {
-    borderColor: '#4CAF50',
   },
   imageContainer: {
     alignItems: 'center',
@@ -413,24 +326,6 @@ const styles = StyleSheet.create({
   },
   infoValue: {
     color: '#555',
-  },
-  disabledButton: {
-    backgroundColor: '#CCCCCC',
-  },
-  networkCard: {
-    backgroundColor: '#FFF3E0',
-    marginTop: 12,
-    borderRadius: 8,
-  },
-  networkText: {
-    color: '#F57C00',
-    fontWeight: 'bold',
-    fontSize: 14,
-  },
-  networkSubtext: {
-    color: '#FF8F00',
-    fontSize: 12,
-    marginTop: 4,
   },
 });
 

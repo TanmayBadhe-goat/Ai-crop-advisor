@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { View, StyleSheet, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
-import { TextInput, Button, Card, Title, Text, Avatar, Snackbar } from 'react-native-paper';
+import { TextInput, Button, Card, Title, Text, Avatar } from 'react-native-paper';
 import { cropService, ChatMessage } from '../api/cropService';
 
 const FarmAssistantScreen = () => {
@@ -12,22 +12,9 @@ const FarmAssistantScreen = () => {
     }
   ]);
   const [loading, setLoading] = useState(false);
-  const [networkConnected, setNetworkConnected] = useState(true);
-  const [snackbarVisible, setSnackbarVisible] = useState(false);
-  const [snackbarMessage, setSnackbarMessage] = useState('');
 
   const sendMessage = async () => {
     if (!message.trim()) return;
-    
-    // Check network connectivity first
-    const isConnected = await cropService.checkNetworkConnectivity();
-    setNetworkConnected(isConnected);
-    
-    if (!isConnected) {
-      setSnackbarMessage('No internet connection. Please check your network.');
-      setSnackbarVisible(true);
-      return;
-    }
     
     const userMessage: ChatMessage = {
       role: 'user',
@@ -35,13 +22,12 @@ const FarmAssistantScreen = () => {
     };
     
     setChatHistory(prev => [...prev, userMessage]);
-    const currentMessage = message;
     setMessage('');
     setLoading(true);
     
     try {
       const response = await cropService.sendChatMessage({
-        message: currentMessage,
+        message: message,
         lang: 'en-US',
         concise: true
       });
@@ -61,33 +47,18 @@ const FarmAssistantScreen = () => {
         ]);
       }
     } catch (error) {
-      console.error('Chat error:', error);
-      const errorMessage = cropService.getNetworkErrorMessage(error);
-      setSnackbarMessage(errorMessage);
-      setSnackbarVisible(true);
-      
+      console.error(error);
       setChatHistory(prev => [
         ...prev, 
         {
           role: 'assistant',
-          content: `Sorry, I encountered a network error: ${errorMessage}. Please try again.`
+          content: 'Sorry, I encountered an error. Please try again later.'
         }
       ]);
     } finally {
       setLoading(false);
     }
   };
-
-  // Check network connectivity periodically
-  useEffect(() => {
-    const checkConnectivity = async () => {
-      const isConnected = await cropService.checkNetworkConnectivity();
-      setNetworkConnected(isConnected);
-    };
-    
-    const interval = setInterval(checkConnectivity, 10000); // Check every 10 seconds
-    return () => clearInterval(interval);
-  }, []);
 
   const getMessageEmoji = (role: string) => {
     return role === 'user' ? '👨‍🌾' : '🤖';
@@ -143,31 +114,14 @@ const FarmAssistantScreen = () => {
             mode="contained"
             onPress={sendMessage}
             loading={loading}
-            disabled={loading || !message.trim() || !networkConnected}
-            style={[styles.sendButton, !networkConnected && styles.disabledButton]}
+            disabled={loading || !message.trim()}
+            style={styles.sendButton}
             icon="send"
           >
             Send
           </Button>
         </Card.Content>
       </Card>
-      
-      <Snackbar
-        visible={snackbarVisible}
-        onDismiss={() => setSnackbarVisible(false)}
-        duration={4000}
-        action={{
-          label: 'Retry',
-          onPress: () => {
-            setSnackbarVisible(false);
-            if (message.trim()) {
-              sendMessage();
-            }
-          },
-        }}
-      >
-        {snackbarMessage}
-      </Snackbar>
     </KeyboardAvoidingView>
   );
 };
@@ -247,9 +201,6 @@ const styles = StyleSheet.create({
   },
   sendButton: {
     backgroundColor: '#4CAF50',
-  },
-  disabledButton: {
-    backgroundColor: '#CCCCCC',
   },
 });
 

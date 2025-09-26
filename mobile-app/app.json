@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "KrishiMitra",
-    "slug": "krishimitra",
+    "name": "mobile-app",
+    "slug": "mobile-app",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -13,21 +13,7 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true,
-      "infoPlist": {
-        "NSAppTransportSecurity": {
-          "NSAllowsArbitraryLoads": true,
-          "NSExceptionDomains": {
-            "localhost": {
-              "NSExceptionAllowsInsecureHTTPLoads": true
-            },
-            "web-production-af45d.up.railway.app": {
-              "NSExceptionAllowsInsecureHTTPLoads": false,
-              "NSExceptionMinimumTLSVersion": "1.0"
-            }
-          }
-        }
-      }
+      "supportsTablet": true
     },
     "android": {
       "adaptiveIcon": {
@@ -35,38 +21,10 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false,
-      "permissions": [
-        "android.permission.INTERNET",
-        "android.permission.ACCESS_NETWORK_STATE",
-        "android.permission.ACCESS_WIFI_STATE",
-        "android.permission.CHANGE_NETWORK_STATE",
-        "android.permission.CAMERA",
-        "android.permission.READ_EXTERNAL_STORAGE",
-        "android.permission.WRITE_EXTERNAL_STORAGE",
-        "android.permission.ACCESS_FINE_LOCATION",
-        "android.permission.ACCESS_COARSE_LOCATION"
-      ],
-      "usesCleartextTraffic": true,
-      "networkSecurityConfig": "@xml/network_security_config"
+      "predictiveBackGestureEnabled": false
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    },
-    "plugins": [
-      [
-        "expo-image-picker",
-        {
-          "photosPermission": "The app accesses your photos to let you share them with your friends.",
-          "cameraPermission": "The app accesses your camera to let you take photos and detect plant diseases."
-        }
-      ],
-      [
-        "expo-location",
-        {
-          "locationAlwaysAndWhenInUsePermission": "Allow KrishiMitra to use your location to provide weather data and location-specific crop recommendations."
-        }
-      ]
-    ]
+    }
   }
 }

@@ -161,7 +161,7 @@ export const translations: Record<string, Translation> = {
   en: {
     // App
     app: {
-      title: "KrishiMitra",
+      title: "CropAI Assistant",
       tagline: "Smart farming solutions"
     },
     
@@ -198,7 +198,7 @@ export const translations: Record<string, Translation> = {
     // Dashboard
     dashboard: {
       hero: {
-        title: "KrishiMitra",
+        title: "AI Crop Advisor",
         subtitle: "Empowering farmers with AI-driven insights for better crop management and higher yields"
       },
       stats: {
@@ -318,7 +318,7 @@ export const translations: Record<string, Translation> = {
   hi: {
     // App
     app: {
-      title: "कृषिमित्र",
+      title: "क्रॉपएआई सहायक",
       tagline: "स्मार्ट खेती समाधान"
     },
     
@@ -355,7 +355,7 @@ export const translations: Record<string, Translation> = {
     // Dashboard
     dashboard: {
       hero: {
-        title: "कृषिमित्र",
+        title: "एआई क्रॉप सलाहकार",
         subtitle: "बेहतर फसल प्रबंधन और अधिक उपज के लिए एआई-संचालित अंतर्दृष्टि के साथ किसानों को सशक्त बनाना"
       },
       stats: {

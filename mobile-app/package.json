@@ -1,5 +1,5 @@
 {
-  "name": "krishimitra-mobile",
+  "name": "mobile-app",
   "version": "1.0.0",
   "main": "index.ts",
   "scripts": {
@@ -10,7 +10,6 @@
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.2",
-    "@react-native-community/netinfo": "^11.4.1",
     "@react-navigation/bottom-tabs": "^7.4.7",
     "@react-navigation/native": "^7.1.17",
     "@react-navigation/native-stack": "^7.3.26",
@@ -31,7 +30,6 @@
   },
   "devDependencies": {
     "@types/react": "~19.1.0",
-    "@types/react-native": "^0.72.8",
     "typescript": "~5.9.2"
   },
   "private": true

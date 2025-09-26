@@ -34,8 +34,11 @@ const Navigation = ({ activeSection, onSectionChange }: NavigationProps) => {
     { id: "detection", label: t('navigation.detection', 'Disease Detection'), icon: Scan },
     { id: "chat", label: t('navigation.chat', 'AI Assistant'), icon: MessageCircle },
     { id: "calendar", label: t('navigation.calendar', 'Crop Calendar'), icon: Calendar },
+    { id: "analytics", label: t('navigation.analytics', 'Analytics'), icon: BarChart3 },
     { id: "business", label: t('navigation.business', 'Business Model'), icon: Building },
     { id: "community", label: t('navigation.community', 'Community'), icon: Users },
+    { id: "reports", label: t('navigation.reports', 'Reports'), icon: FileText },
+    { id: "settings", label: t('navigation.settings', 'Settings'), icon: Settings },
   ];
 
   const handleNavClick = (section: string) => {
