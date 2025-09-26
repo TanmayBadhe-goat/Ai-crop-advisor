@@ -398,7 +398,8 @@ def home():
         'message': 'KrishiMitra API Running', 
         'status': 'OK',
         'gemini_configured': bool(GEMINI_API_KEY),
-        'weather_configured': bool(WEATHER_API_KEY)
+        'weather_configured': bool(WEATHER_API_KEY),
+        'gemini_model': GEMINI_MODEL
     })
 
 @app.route('/api/predict', methods=['POST'])
@@ -442,33 +443,38 @@ def chatbot():
     
     logger.info(f"Chatbot request: {user_msg}")
     
-    # Always try fallback first for reliability
-    try:
-        fallback_response = get_fallback_response(user_msg)
-        logger.info(f"Fallback response generated: {fallback_response[:100]}...")
+    # Try Gemini first with multiple model fallbacks
+    if GEMINI_API_KEY:
+        gemini_models = ['gemini-pro', 'gemini-1.5-flash', 'models/gemini-pro']
         
-        # Try Gemini only if fallback doesn't provide a good match
-        if GEMINI_API_KEY and "I'm here to help with your farming questions" in fallback_response:
-            logger.info("Trying Gemini API as fallback was generic")
+        for model_name in gemini_models:
             try:
-                model_ai = genai.GenerativeModel('gemini-pro')
+                logger.info(f"Trying Gemini model: {model_name}")
+                model_ai = genai.GenerativeModel(model_name)
                 style = 'Answer very concisely in 1-3 sentences.' if concise else 'Answer clearly and helpfully.'
                 prompt = f"You are a farming expert. {style} Question: {user_msg}"
                 resp = model_ai.generate_content(prompt)
                 text = (resp.text or '').strip()
+                
                 if text and len(text) > 10:
-                    logger.info("Successfully used Gemini")
+                    logger.info(f"Successfully used Gemini model: {model_name}")
                     return jsonify({
                         'success': True, 
                         'response': text, 
                         'lang': lang, 
                         'concise': concise,
-                        'source': 'gemini'
+                        'source': 'gemini',
+                        'model_used': model_name
                     })
             except Exception as gemini_error:
-                logger.warning(f"Gemini failed: {gemini_error}")
+                logger.warning(f"Gemini model {model_name} failed: {gemini_error}")
+                continue
+    
+    # Fallback to agricultural knowledge base
+    try:
+        fallback_response = get_fallback_response(user_msg)
+        logger.info(f"Using knowledge base fallback: {fallback_response[:100]}...")
         
-        # Return fallback response
         return jsonify({
             'success': True, 
             'response': fallback_response, 
@@ -482,7 +488,7 @@ def chatbot():
         return jsonify({
             'success': True, 
             'response': '🌾 I\'m here to help with farming questions! You can ask me about crops like rice, wheat, maize, cotton, fertilizers, irrigation, pest control, and more.',
-            'source': 'basic_fallback'
+            'source': 'emergency_fallback'
         })
 
 @app.route('/api/weather', methods=['POST'])
