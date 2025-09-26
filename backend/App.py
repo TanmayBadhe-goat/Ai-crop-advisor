@@ -231,19 +231,36 @@ def get_fallback_response(user_message):
     """Generate intelligent fallback response based on agricultural knowledge"""
     user_message_lower = user_message.lower()
     
-    # Check for specific crop mentions
+    logger.info(f"Processing fallback for: {user_message_lower}")
+    
+    # Check for specific crop mentions first
     for crop, data in agricultural_knowledge.items():
-        for keyword in data['keywords']:
-            if keyword.lower() in user_message_lower:
-                return random.choice(data['responses'])
+        if 'keywords' in data:
+            for keyword in data['keywords']:
+                if keyword.lower() in user_message_lower:
+                    response = random.choice(data['responses'])
+                    logger.info(f"Matched crop '{crop}' with keyword '{keyword}', response: {response[:50]}...")
+                    return response
     
     # Check for general farming topics
     general_topics = ['fertilizer', 'irrigation', 'pest', 'soil', 'weather', 'seeds', 'organic', 'harvest']
     for topic in general_topics:
-        if topic in agricultural_knowledge:
+        if topic in agricultural_knowledge and 'keywords' in agricultural_knowledge[topic]:
             for keyword in agricultural_knowledge[topic]['keywords']:
                 if keyword.lower() in user_message_lower:
-                    return random.choice(agricultural_knowledge[topic]['responses'])
+                    response = random.choice(agricultural_knowledge[topic]['responses'])
+                    logger.info(f"Matched topic '{topic}' with keyword '{keyword}'")
+                    return response
+    
+    # Check for "grow" + crop combinations
+    if 'grow' in user_message_lower:
+        for crop, data in agricultural_knowledge.items():
+            if 'keywords' in data:
+                for keyword in data['keywords']:
+                    if keyword.lower() in user_message_lower:
+                        response = random.choice(data['responses'])
+                        logger.info(f"Matched 'grow' + '{crop}' combination")
+                        return response
     
     # Default responses for common question patterns
     if any(word in user_message_lower for word in ['how', 'kaise', 'कैसे']):
@@ -256,6 +273,7 @@ def get_fallback_response(user_message):
         return "💰 Crop prices vary by location and season. Check local mandis, government MSP rates, and online platforms like eNAM. Consider value addition and direct marketing for better prices."
     
     # Default helpful response
+    logger.info("Using default fallback response")
     return "🌾 I'm here to help with your farming questions! You can ask me about:\n• Crop cultivation (rice, wheat, maize, cotton, etc.)\n• Fertilizers and soil management\n• Irrigation and water management\n• Pest and disease control\n• Seeds and varieties\n• Organic farming\n• Harvest and post-harvest\n\nPlease ask a specific question about any farming topic!"
 
 # Weather function shared by both
@@ -418,65 +436,54 @@ def chatbot():
     user_msg = data.get('message', '')
     lang = data.get('lang', 'en-US')
     concise = bool(data.get('concise', True))
-    if not user_msg:
-        return jsonify({'error': 'No message'}), 400
     
+    if not user_msg:
+        return jsonify({'success': False, 'error': 'No message provided'}), 400
+    
+    logger.info(f"Chatbot request: {user_msg}")
+    
+    # Always try fallback first for reliability
     try:
-        # First try Gemini if available
-        if GEMINI_API_KEY:
-            # Try multiple models in sequence
-            models_to_try = [GEMINI_MODEL, 'gemini-pro', 'gemini-1.5-flash', 'models/gemini-pro']
-            
-            for model_name in models_to_try:
-                try:
-                    logger.info(f"Trying model: {model_name}")
-                    model_ai = genai.GenerativeModel(model_name)
-                    style = 'Answer very concisely in 1-3 sentences.' if concise else 'Answer clearly and helpfully.'
-                    locale = f"Respond in language/locale: {lang}." if lang else ''
-                    prompt = f"You are a farming expert. {style} {locale} Question: {user_msg}"
-                    resp = model_ai.generate_content(prompt)
-                    text = (resp.text or '').strip()
-                    if not text:
-                        text = 'Sorry, I could not generate a response.'
-                    logger.info(f"Successfully used model: {model_name}")
-                    return jsonify({'success': True, 'response': text, 'lang': lang, 'concise': concise, 'source': 'gemini'})
-                except Exception as model_error:
-                    logger.warning(f"Model {model_name} failed: {model_error}")
-                    continue
-            
-            # If all Gemini models failed, fall back to knowledge base
-            logger.warning("All Gemini models failed, using fallback knowledge base")
-        else:
-            logger.warning('Gemini API key missing, using fallback knowledge base')
-        
-        # Use fallback agricultural knowledge base
         fallback_response = get_fallback_response(user_msg)
+        logger.info(f"Fallback response generated: {fallback_response[:100]}...")
+        
+        # Try Gemini only if fallback doesn't provide a good match
+        if GEMINI_API_KEY and "I'm here to help with your farming questions" in fallback_response:
+            logger.info("Trying Gemini API as fallback was generic")
+            try:
+                model_ai = genai.GenerativeModel('gemini-pro')
+                style = 'Answer very concisely in 1-3 sentences.' if concise else 'Answer clearly and helpfully.'
+                prompt = f"You are a farming expert. {style} Question: {user_msg}"
+                resp = model_ai.generate_content(prompt)
+                text = (resp.text or '').strip()
+                if text and len(text) > 10:
+                    logger.info("Successfully used Gemini")
+                    return jsonify({
+                        'success': True, 
+                        'response': text, 
+                        'lang': lang, 
+                        'concise': concise,
+                        'source': 'gemini'
+                    })
+            except Exception as gemini_error:
+                logger.warning(f"Gemini failed: {gemini_error}")
+        
+        # Return fallback response
         return jsonify({
             'success': True, 
             'response': fallback_response, 
             'lang': lang, 
             'concise': concise,
-            'source': 'knowledge_base',
-            'note': 'Response generated from agricultural knowledge base'
+            'source': 'knowledge_base'
         })
         
     except Exception as e:
         logger.error(f"Chatbot error: {e}")
-        # Even if there's an error, try to provide a helpful fallback
-        try:
-            fallback_response = get_fallback_response(user_msg)
-            return jsonify({
-                'success': True, 
-                'response': fallback_response,
-                'source': 'emergency_fallback',
-                'note': 'Emergency fallback response'
-            })
-        except:
-            return jsonify({
-                'success': True, 
-                'response': '🌾 I\'m experiencing technical difficulties, but I\'m here to help with farming questions. Please try asking about specific crops like rice, wheat, maize, or farming topics like fertilizers, irrigation, or pest control.',
-                'source': 'basic_fallback'
-            })
+        return jsonify({
+            'success': True, 
+            'response': '🌾 I\'m here to help with farming questions! You can ask me about crops like rice, wheat, maize, cotton, fertilizers, irrigation, pest control, and more.',
+            'source': 'basic_fallback'
+        })
 
 @app.route('/api/weather', methods=['POST'])
 def weather():
