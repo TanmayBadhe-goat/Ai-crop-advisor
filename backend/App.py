@@ -14,6 +14,10 @@ import pandas as pd
 import numpy as np
 import random
 import datetime
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 app = Flask(__name__)
 CORS(app)
@@ -23,7 +27,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # API Keys
-GEMINI_API_KEY = os.environ.get('Gemini_API_key')
+GEMINI_API_KEY = os.environ.get('Gemini_API_key', 'AIzaSyD8Vb3TXMsoWVC9FAzBmdOXdhTHogBZeXk')
 WEATHER_API_KEY = os.environ.get('Weather_API_key')
 GEMINI_MODEL = os.environ.get('GEMINI_MODEL', 'gemini-pro')
 

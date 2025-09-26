@@ -1,7 +1,7 @@
 // API Configuration
 export const API_CONFIG = {
   BASE_URL: import.meta.env.VITE_API_URL || 
-           (import.meta.env.PROD ? 'https://web-production-e2f4f.up.railway.app' : 'http://localhost:5000'),
+           (import.meta.env.PROD ? 'https://web-production-d6596.up.railway.app' : 'http://localhost:5000'),
   ENDPOINTS: {
     PREDICT: '/api/predict',
     CHATBOT: '/api/chatbot',
