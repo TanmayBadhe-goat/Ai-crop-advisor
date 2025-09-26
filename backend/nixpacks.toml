@@ -2,10 +2,10 @@
 nixPkgs = ['python39', 'pip']
 
 [phases.install]
-cmds = ['pip install -r requirements.txt']
+cmds = ['pip install -r backend/requirements.txt']
 
 [phases.build]
 cmds = ['echo "Build phase completed"']
 
 [start]
-cmd = 'gunicorn --bind 0.0.0.0:$PORT --timeout 120 --workers 1 --log-level info app:app'
+cmd = 'cd backend && gunicorn --bind 0.0.0.0:$PORT --timeout 120 --workers 1 --log-level info app:app'
