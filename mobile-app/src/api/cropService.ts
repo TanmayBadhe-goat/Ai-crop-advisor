@@ -3,7 +3,7 @@ import { Platform } from 'react-native';
 
 // Base URL for the backend API
 // Use Railway production URL for both development and production
-const API_URL = 'https://web-production-af45d.up.railway.app/api';
+const API_URL = 'https://ai-crop-advisor-production.up.railway.app/api';
 
 console.log('Using API URL:', API_URL);
 console.log('Platform:', Platform.OS);
