@@ -25,7 +25,7 @@ logger = logging.getLogger(__name__)
 # API Keys
 GEMINI_API_KEY = os.environ.get('Gemini_API_key')
 WEATHER_API_KEY = os.environ.get('Weather_API_key')
-GEMINI_MODEL = os.environ.get('GEMINI_MODEL', 'gemini-1.5-flash')
+GEMINI_MODEL = os.environ.get('GEMINI_MODEL', 'gemini-pro')
 
 # Configure Gemini
 try:
@@ -107,6 +107,156 @@ disease_database = {
         'emoji': '🍂'
     }
 }
+
+# Agricultural Knowledge Base for Fallback Responses
+agricultural_knowledge = {
+    # Crop-specific questions
+    'rice': {
+        'keywords': ['rice', 'paddy', 'chawal', 'धान'],
+        'responses': [
+            "🌾 Rice grows best in flooded fields with temperatures 20-35°C. Plant during monsoon (June-July) for Kharif season.",
+            "🌾 For rice cultivation: Use 120kg N, 60kg P2O5, 40kg K2O per hectare. Maintain 2-5cm water level.",
+            "🌾 Rice varieties: Basmati for export, IR64 for high yield. Harvest when 80% grains turn golden yellow."
+        ]
+    },
+    'wheat': {
+        'keywords': ['wheat', 'gehun', 'गेहूं'],
+        'responses': [
+            "🌾 Wheat is a Rabi crop. Sow in November-December, harvest in March-April. Needs 15-25°C temperature.",
+            "🌾 For wheat: Apply 150kg N, 75kg P2O5, 60kg K2O per hectare. Irrigate 4-6 times during growing season.",
+            "🌾 Popular wheat varieties: HD2967, PBW343, DBW17. Ensure proper drainage to prevent waterlogging."
+        ]
+    },
+    'maize': {
+        'keywords': ['maize', 'corn', 'makka', 'मक्का'],
+        'responses': [
+            "🌽 Maize can be grown year-round. Kharif: June-October, Rabi: November-April. Needs 21-27°C temperature.",
+            "🌽 For maize: Use 120kg N, 60kg P2O5, 40kg K2O per hectare. Plant spacing: 60cm x 20cm.",
+            "🌽 Maize varieties: Pioneer, Monsanto hybrids for high yield. Harvest when moisture content is 20-25%."
+        ]
+    },
+    'cotton': {
+        'keywords': ['cotton', 'kapas', 'कपास'],
+        'responses': [
+            "🌿 Cotton is a Kharif crop (April-October). Needs 21-30°C temperature and 500-1000mm rainfall.",
+            "🌿 For cotton: Apply 100kg N, 50kg P2O5, 50kg K2O per hectare. Plant spacing: 90cm x 45cm.",
+            "🌿 Cotton varieties: Bt cotton for pest resistance. Monitor for bollworm and whitefly regularly."
+        ]
+    },
+    'tomato': {
+        'keywords': ['tomato', 'tamatar', 'टमाटर'],
+        'responses': [
+            "🍅 Tomatoes grow year-round. Optimal temperature: 20-25°C. Avoid extreme heat and frost.",
+            "🍅 For tomatoes: Apply 150kg N, 100kg P2O5, 100kg K2O per hectare. Use drip irrigation.",
+            "🍅 Tomato varieties: Pusa Ruby, Arka Vikas. Stake plants and prune suckers for better yield."
+        ]
+    },
+    'potato': {
+        'keywords': ['potato', 'aloo', 'आलू'],
+        'responses': [
+            "🥔 Potato is a Rabi crop (October-February). Needs cool weather 15-20°C for tuber formation.",
+            "🥔 For potatoes: Apply 180kg N, 80kg P2O5, 100kg K2O per hectare. Hill up soil around plants.",
+            "🥔 Potato varieties: Kufri Jyoti, Kufri Pukhraj. Harvest when leaves turn yellow and dry."
+        ]
+    },
+    
+    # General farming topics
+    'fertilizer': {
+        'keywords': ['fertilizer', 'khad', 'खाद', 'urea', 'dap', 'npk'],
+        'responses': [
+            "🌱 NPK fertilizers: N for leaf growth, P for roots/flowers, K for disease resistance. Test soil before applying.",
+            "🌱 Organic fertilizers: Compost, vermicompost, green manure improve soil health long-term.",
+            "🌱 Apply fertilizers in split doses: 1/3 at sowing, 1/3 at vegetative stage, 1/3 at flowering."
+        ]
+    },
+    'irrigation': {
+        'keywords': ['irrigation', 'water', 'pani', 'पानी', 'watering'],
+        'responses': [
+            "💧 Drip irrigation saves 30-50% water and increases yield. Best for vegetables and fruits.",
+            "💧 Water crops early morning or evening to reduce evaporation. Check soil moisture before watering.",
+            "💧 Critical irrigation stages: Germination, flowering, and grain filling. Don't overwater."
+        ]
+    },
+    'pest': {
+        'keywords': ['pest', 'insect', 'bug', 'keet', 'कीट', 'disease', 'bimari'],
+        'responses': [
+            "🐛 Integrated Pest Management (IPM): Use biological, cultural, and chemical methods together.",
+            "🐛 Common pests: Aphids, bollworm, stem borer. Use neem oil, pheromone traps, and beneficial insects.",
+            "🐛 Monitor crops weekly. Early detection prevents major damage. Rotate crops to break pest cycles."
+        ]
+    },
+    'soil': {
+        'keywords': ['soil', 'mitti', 'मिट्टी', 'ph', 'testing'],
+        'responses': [
+            "🌍 Soil pH 6.0-7.5 is ideal for most crops. Test soil every 2-3 years for nutrients.",
+            "🌍 Add organic matter: compost, farmyard manure improves soil structure and fertility.",
+            "🌍 Soil types: Sandy (good drainage), Clay (water retention), Loamy (best for most crops)."
+        ]
+    },
+    'weather': {
+        'keywords': ['weather', 'mausam', 'मौसम', 'rain', 'temperature', 'climate'],
+        'responses': [
+            "🌤️ Monitor weather forecasts for farming decisions. Avoid spraying before rain.",
+            "🌤️ Kharif crops need monsoon rains (June-September). Rabi crops need winter season (October-March).",
+            "🌤️ Extreme weather: Use mulching for temperature control, drainage for excess water."
+        ]
+    },
+    'seeds': {
+        'keywords': ['seed', 'beej', 'बीज', 'variety', 'hybrid'],
+        'responses': [
+            "🌰 Use certified seeds from authorized dealers. Check germination rate before sowing.",
+            "🌰 Hybrid seeds give higher yield but can't be saved for next season. Open-pollinated varieties can be saved.",
+            "🌰 Seed treatment with fungicides prevents soil-borne diseases. Soak seeds before sowing."
+        ]
+    },
+    'organic': {
+        'keywords': ['organic', 'natural', 'javik', 'जैविक'],
+        'responses': [
+            "🌿 Organic farming: Use compost, vermicompost, green manure, and bio-fertilizers.",
+            "🌿 Natural pest control: Neem, garlic spray, companion planting, beneficial insects.",
+            "🌿 Organic certification takes 3 years. Higher prices but better soil health long-term."
+        ]
+    },
+    'harvest': {
+        'keywords': ['harvest', 'katai', 'कटाई', 'crop', 'yield'],
+        'responses': [
+            "🌾 Harvest at right maturity: Too early reduces yield, too late reduces quality.",
+            "🌾 Post-harvest: Proper drying, storage prevents losses. Use moisture meters for grains.",
+            "🌾 Market timing: Check prices, avoid glut periods. Value addition increases profits."
+        ]
+    }
+}
+
+def get_fallback_response(user_message):
+    """Generate intelligent fallback response based on agricultural knowledge"""
+    user_message_lower = user_message.lower()
+    
+    # Check for specific crop mentions
+    for crop, data in agricultural_knowledge.items():
+        for keyword in data['keywords']:
+            if keyword.lower() in user_message_lower:
+                return random.choice(data['responses'])
+    
+    # Check for general farming topics
+    general_topics = ['fertilizer', 'irrigation', 'pest', 'soil', 'weather', 'seeds', 'organic', 'harvest']
+    for topic in general_topics:
+        if topic in agricultural_knowledge:
+            for keyword in agricultural_knowledge[topic]['keywords']:
+                if keyword.lower() in user_message_lower:
+                    return random.choice(agricultural_knowledge[topic]['responses'])
+    
+    # Default responses for common question patterns
+    if any(word in user_message_lower for word in ['how', 'kaise', 'कैसे']):
+        return "🌱 For specific farming guidance, please mention the crop name or farming topic you need help with. I can provide information about rice, wheat, maize, cotton, tomato, potato, fertilizers, irrigation, pest control, and more."
+    
+    if any(word in user_message_lower for word in ['when', 'kab', 'कब']):
+        return "📅 Farming timing depends on your crop and location. Kharif crops (June-October): Rice, Cotton, Sugarcane. Rabi crops (November-April): Wheat, Potato, Mustard. Please specify your crop for detailed timing."
+    
+    if any(word in user_message_lower for word in ['price', 'market', 'sell', 'kimat', 'कीमत']):
+        return "💰 Crop prices vary by location and season. Check local mandis, government MSP rates, and online platforms like eNAM. Consider value addition and direct marketing for better prices."
+    
+    # Default helpful response
+    return "🌾 I'm here to help with your farming questions! You can ask me about:\n• Crop cultivation (rice, wheat, maize, cotton, etc.)\n• Fertilizers and soil management\n• Irrigation and water management\n• Pest and disease control\n• Seeds and varieties\n• Organic farming\n• Harvest and post-harvest\n\nPlease ask a specific question about any farming topic!"
 
 # Weather function shared by both
 def get_weather_data(lat, lon):
@@ -270,37 +420,63 @@ def chatbot():
     concise = bool(data.get('concise', True))
     if not user_msg:
         return jsonify({'error': 'No message'}), 400
+    
     try:
-        if not GEMINI_API_KEY:
-            logger.warning('Gemini API key missing; returning fallback reply')
-            return jsonify({'success': True, 'response': 'I cannot access the assistant right now. Please try again later.'})
-
-        # Try multiple models in sequence
-        models_to_try = [GEMINI_MODEL, 'gemini-pro', 'gemini-1.5-flash', 'models/gemini-pro']
+        # First try Gemini if available
+        if GEMINI_API_KEY:
+            # Try multiple models in sequence
+            models_to_try = [GEMINI_MODEL, 'gemini-pro', 'gemini-1.5-flash', 'models/gemini-pro']
+            
+            for model_name in models_to_try:
+                try:
+                    logger.info(f"Trying model: {model_name}")
+                    model_ai = genai.GenerativeModel(model_name)
+                    style = 'Answer very concisely in 1-3 sentences.' if concise else 'Answer clearly and helpfully.'
+                    locale = f"Respond in language/locale: {lang}." if lang else ''
+                    prompt = f"You are a farming expert. {style} {locale} Question: {user_msg}"
+                    resp = model_ai.generate_content(prompt)
+                    text = (resp.text or '').strip()
+                    if not text:
+                        text = 'Sorry, I could not generate a response.'
+                    logger.info(f"Successfully used model: {model_name}")
+                    return jsonify({'success': True, 'response': text, 'lang': lang, 'concise': concise, 'source': 'gemini'})
+                except Exception as model_error:
+                    logger.warning(f"Model {model_name} failed: {model_error}")
+                    continue
+            
+            # If all Gemini models failed, fall back to knowledge base
+            logger.warning("All Gemini models failed, using fallback knowledge base")
+        else:
+            logger.warning('Gemini API key missing, using fallback knowledge base')
         
-        for model_name in models_to_try:
-            try:
-                logger.info(f"Trying model: {model_name}")
-                model_ai = genai.GenerativeModel(model_name)
-                style = 'Answer very concisely in 1-3 sentences.' if concise else 'Answer clearly and helpfully.'
-                locale = f"Respond in language/locale: {lang}." if lang else ''
-                prompt = f"You are a farming expert. {style} {locale} Question: {user_msg}"
-                resp = model_ai.generate_content(prompt)
-                text = (resp.text or '').strip()
-                if not text:
-                    text = 'Sorry, I could not generate a response.'
-                logger.info(f"Successfully used model: {model_name}")
-                return jsonify({'success': True, 'response': text, 'lang': lang, 'concise': concise})
-            except Exception as model_error:
-                logger.warning(f"Model {model_name} failed: {model_error}")
-                continue
+        # Use fallback agricultural knowledge base
+        fallback_response = get_fallback_response(user_msg)
+        return jsonify({
+            'success': True, 
+            'response': fallback_response, 
+            'lang': lang, 
+            'concise': concise,
+            'source': 'knowledge_base',
+            'note': 'Response generated from agricultural knowledge base'
+        })
         
-        # If all models failed
-        logger.error("All Gemini models failed")
-        raise Exception("All available models failed")
     except Exception as e:
         logger.error(f"Chatbot error: {e}")
-        return jsonify({'success': True, 'response': 'I apologize, but I\'m having trouble connecting to the AI service right now. Please try again in a moment, or consult with local farming experts for immediate assistance.'})
+        # Even if there's an error, try to provide a helpful fallback
+        try:
+            fallback_response = get_fallback_response(user_msg)
+            return jsonify({
+                'success': True, 
+                'response': fallback_response,
+                'source': 'emergency_fallback',
+                'note': 'Emergency fallback response'
+            })
+        except:
+            return jsonify({
+                'success': True, 
+                'response': '🌾 I\'m experiencing technical difficulties, but I\'m here to help with farming questions. Please try asking about specific crops like rice, wheat, maize, or farming topics like fertilizers, irrigation, or pest control.',
+                'source': 'basic_fallback'
+            })
 
 @app.route('/api/weather', methods=['POST'])
 def weather():
@@ -415,6 +591,26 @@ def record_prediction():
     except Exception as e:
         logger.error(f"Record prediction error: {e}")
         return jsonify({'success': False, 'error': 'Failed to record prediction'}), 500
+
+@app.route('/api/test-fallback', methods=['POST'])
+def test_fallback():
+    """Test the fallback knowledge system"""
+    try:
+        data = request.get_json()
+        test_message = data.get('message', 'How to grow rice?')
+        
+        # Force use fallback system
+        fallback_response = get_fallback_response(test_message)
+        
+        return jsonify({
+            'success': True,
+            'test_message': test_message,
+            'fallback_response': fallback_response,
+            'knowledge_base_active': True
+        })
+    except Exception as e:
+        logger.error(f"Test fallback error: {e}")
+        return jsonify({'success': False, 'error': 'Failed to test fallback system'}), 500
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
