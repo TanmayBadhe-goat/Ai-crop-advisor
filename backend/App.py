@@ -13,7 +13,7 @@ from sklearn.preprocessing import StandardScaler
 import pandas as pd
 import numpy as np
 import random
-import os
+import datetime
 
 app = Flask(__name__)
 CORS(app)
@@ -138,7 +138,6 @@ def get_weather_data(lat, lon):
                     })
             else:
                 # Fallback mock forecast
-                import datetime
                 for i in range(3):
                     date = (datetime.datetime.now() + datetime.timedelta(days=i+1)).strftime('%Y-%m-%d')
                     forecast.append({
@@ -360,7 +359,6 @@ def dashboard_stats():
     """Get dashboard statistics"""
     try:
         # Simulate real statistics (in production, these would come from a database)
-        import datetime
         current_month = datetime.datetime.now().month
         
         # Generate realistic statistics
