@@ -612,6 +612,11 @@ def test_fallback():
         logger.error(f"Test fallback error: {e}")
         return jsonify({'success': False, 'error': 'Failed to test fallback system'}), 500
 
+# For Vercel deployment
+def handler(event, context):
+    return app
+
+# For local development and other deployments
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     app.run(debug=True, host='0.0.0.0', port=port)
