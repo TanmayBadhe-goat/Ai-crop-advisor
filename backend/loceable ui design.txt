@@ -1,7 +1,0 @@
-loceable ui design
-vo.dev figma react code
-clerk auth
-supabase backend
-langchain ai logic handle
-copiloy code cleanup
-vercel railway deploy
