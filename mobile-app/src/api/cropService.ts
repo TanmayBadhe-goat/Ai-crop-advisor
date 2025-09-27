@@ -122,7 +122,7 @@ export const cropService = {
   // Get crop recommendation
   predictCrop: async (data: CropPredictionRequest): Promise<CropPredictionResponse> => {
     try {
-      const response = await axios.post(`${API_URL}/predict`, data);
+      const response = await axios.post(`${API_URL}/api/predict`, data);
       return response.data;
     } catch (error) {
       console.error('Error predicting crop:', error);
@@ -133,7 +133,7 @@ export const cropService = {
   // Get weather data
   getWeather: async (data: WeatherRequest): Promise<WeatherResponse> => {
     try {
-      const response = await axios.post(`${API_URL}/weather`, data);
+      const response = await axios.post(`${API_URL}/api/weather`, data);
       return response.data;
     } catch (error) {
       console.error('Error fetching weather:', error);
@@ -144,7 +144,7 @@ export const cropService = {
   // Send message to chatbot
   sendChatMessage: async (data: ChatbotRequest): Promise<ChatbotResponse> => {
     try {
-      const response = await axios.post(`${API_URL}/chatbot`, data, {
+      const response = await axios.post(`${API_URL}/api/chatbot`, data, {
         headers: {
           'Content-Type': 'application/json',
         },
@@ -174,10 +174,10 @@ export const cropService = {
       // Append the image to FormData
       formData.append('image', imageFile as any);
 
-      console.log('Uploading image to:', `${API_URL}/upload-image`);
+      console.log('Uploading image to:', `${API_URL}/api/upload-image`);
       
       // First upload the image
-      const uploadResponse = await axios.post(`${API_URL}/upload-image`, formData, {
+      const uploadResponse = await axios.post(`${API_URL}/api/upload-image`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
@@ -193,7 +193,7 @@ export const cropService = {
       console.log('Sending to disease detection endpoint');
       
       // Then detect disease using the uploaded image
-      const diseaseResponse = await axios.post(`${API_URL}/disease-detection`, {
+      const diseaseResponse = await axios.post(`${API_URL}/api/disease-detection`, {
         image_base64: uploadResponse.data.image_base64,
       }, {
         headers: {
@@ -233,7 +233,7 @@ export const cropService = {
   // Get dashboard statistics
   getDashboardStats: async (): Promise<DashboardStatsResponse> => {
     try {
-      const response = await axios.get(`${API_URL}/dashboard-stats`, {
+      const response = await axios.get(`${API_URL}/api/dashboard-stats`, {
         timeout: 8000, // 8 second timeout
       });
       return response.data;
