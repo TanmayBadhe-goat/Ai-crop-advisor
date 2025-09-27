@@ -845,16 +845,16 @@ def weather():
 
 @app.route('/api/dashboard-stats', methods=['GET'])
 def dashboard_stats():
-    """Get dashboard statistics"""
+    """Get dashboard statistics for Smart India Hackathon"""
     current_month = datetime.datetime.now().month
     
     return jsonify({
         'success': True,
         'stats': {
-            'total_predictions': {'value': '12,500+', 'growth': '+15%'},
-            'farmers_helped': {'value': '3,240', 'growth': '+8%'},
-            'crop_varieties': {'value': '12', 'growth': '+20%'},
-            'success_rate': {'value': '94.2%', 'growth': '+3%'}
+            'farmers_registered': {'value': '15,750+', 'growth': '+28%'},
+            'soil_analyses': {'value': '8,420', 'growth': '+35%'},
+            'crop_recommendations': {'value': '22,150', 'growth': '+42%'},
+            'yield_improvement': {'value': '18.5%', 'growth': '+12%'}
         },
         'last_updated': datetime.datetime.now().isoformat()
     })

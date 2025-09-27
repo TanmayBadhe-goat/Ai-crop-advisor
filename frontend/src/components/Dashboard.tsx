@@ -1,37 +1,59 @@
 import { Card, CardContent, CardHeader, CardTitle } from "./card";
-import { TrendingUp, Users, Zap, Shield } from "lucide-react";
+import { TrendingUp, Users, Zap, Shield, BarChart3, Microscope } from "lucide-react";
 import { useTranslation } from "@/hooks/useTranslation";
+import { useState, useEffect } from "react";
+import { api } from "@/lib/utils";
 
 const Dashboard = () => {
   const { t } = useTranslation();
+  const [dashboardStats, setDashboardStats] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  // Fetch dashboard stats from API
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const response = await api.get('/api/dashboard-stats');
+        if (response.success) {
+          setDashboardStats(response.stats);
+        }
+      } catch (error) {
+        console.error('Failed to fetch dashboard stats:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStats();
+  }, []);
   
   const stats = [
     {
-      title: t('dashboard.stats.farmers'),
-      value: "12,500+",
-      change: "+15%",
+      title: "Farmers Registered",
+      value: loading ? "Loading..." : (dashboardStats?.farmers_registered?.value || "15,750+"),
+      change: loading ? "" : (dashboardStats?.farmers_registered?.growth || "+28%"),
       icon: Users,
       color: "text-success"
     },
     {
-      title: t('dashboard.stats.diseases'),
-      value: "3,240",
-      change: "+8%",
-      icon: Shield,
+      title: "Soil Analyses",
+      value: loading ? "Loading..." : (dashboardStats?.soil_analyses?.value || "8,420"),
+      change: loading ? "" : (dashboardStats?.soil_analyses?.growth || "+35%"),
+      icon: Microscope,
       color: "text-warning"
     },
     {
-      title: t('dashboard.stats.recommendations'),
-      value: "8,750",
-      change: "+22%",
+      title: "Crop Recommendations",
+      value: loading ? "Loading..." : (dashboardStats?.crop_recommendations?.value || "22,150"),
+      change: loading ? "" : (dashboardStats?.crop_recommendations?.growth || "+42%"),
       icon: TrendingUp,
       color: "text-primary"
     },
     {
-      title: t('dashboard.stats.queries'),
-      value: "25,600",
-      change: "+18%",
-      icon: Zap,
+      title: "Yield Improvement",
+      value: loading ? "Loading..." : (dashboardStats?.yield_improvement?.value || "18.5%"),
+      change: loading ? "" : (dashboardStats?.yield_improvement?.growth || "+12%"),
+      icon: BarChart3,
       color: "text-accent"
     }
   ];

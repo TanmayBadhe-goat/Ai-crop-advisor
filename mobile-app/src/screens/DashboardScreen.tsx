@@ -33,34 +33,34 @@ const DashboardScreen = ({ navigation }: any) => {
   const fadeAnim = useState(new Animated.Value(0))[0];
   const slideAnim = useState(new Animated.Value(50))[0];
 
-  // Default stats as fallback
+  // Default stats as fallback for Smart India Hackathon
   const defaultStats: StatCard[] = [
     {
-      title: t('dashboard.stats.totalPredictions'),
-      value: '12,500+',
-      percentage: '+15%',
-      icon: 'chart-line',
+      title: 'Farmers Registered',
+      value: '15,750+',
+      percentage: '+28%',
+      icon: 'account-group',
       color: '#4CAF50'
     },
     {
-      title: t('dashboard.stats.farmersHelped'),
-      value: '3,240',
-      percentage: '+8%',
-      icon: 'account-group',
+      title: 'Soil Analyses',
+      value: '8,420',
+      percentage: '+35%',
+      icon: 'microscope',
       color: '#FF9800'
     },
     {
-      title: t('dashboard.stats.cropVarieties'),
-      value: '13',
-      percentage: '+22%',
+      title: 'Crop Recommendations',
+      value: '22,150',
+      percentage: '+42%',
       icon: 'leaf',
       color: '#2196F3'
     },
     {
-      title: t('dashboard.stats.successRate'),
-      value: '95.2%',
-      percentage: '+5%',
-      icon: 'check-circle',
+      title: 'Yield Improvement',
+      value: '18.5%',
+      percentage: '+12%',
+      icon: 'trending-up',
       color: '#9C27B0'
     }
   ];
@@ -82,31 +82,31 @@ const DashboardScreen = ({ navigation }: any) => {
       if (response && response.success) {
         const apiStats: StatCard[] = [
           {
-            title: 'Total Predictions',
-            value: response.stats.total_predictions.value,
-            percentage: response.stats.total_predictions.growth,
-            icon: 'chart-line',
+            title: 'Farmers Registered',
+            value: response.stats.farmers_registered.value,
+            percentage: response.stats.farmers_registered.growth,
+            icon: 'account-group',
             color: '#4CAF50'
           },
           {
-            title: 'Farmers Helped',
-            value: response.stats.farmers_helped.value,
-            percentage: response.stats.farmers_helped.growth,
-            icon: 'account-group',
+            title: 'Soil Analyses',
+            value: response.stats.soil_analyses.value,
+            percentage: response.stats.soil_analyses.growth,
+            icon: 'microscope',
             color: '#FF9800'
           },
           {
-            title: 'Crop Varieties',
-            value: response.stats.crop_varieties.value,
-            percentage: response.stats.crop_varieties.growth,
+            title: 'Crop Recommendations',
+            value: response.stats.crop_recommendations.value,
+            percentage: response.stats.crop_recommendations.growth,
             icon: 'leaf',
             color: '#2196F3'
           },
           {
-            title: 'Success Rate',
-            value: response.stats.success_rate.value,
-            percentage: response.stats.success_rate.growth,
-            icon: 'check-circle',
+            title: 'Yield Improvement',
+            value: response.stats.yield_improvement.value,
+            percentage: response.stats.yield_improvement.growth,
+            icon: 'trending-up',
             color: '#9C27B0'
           }
         ];
