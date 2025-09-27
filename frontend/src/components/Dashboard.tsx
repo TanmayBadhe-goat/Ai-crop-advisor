@@ -29,30 +29,30 @@ const Dashboard = () => {
   
   const stats = [
     {
-      title: "Farmers Registered",
-      value: loading ? "Loading..." : (dashboardStats?.farmers_registered?.value || "15,750+"),
-      change: loading ? "" : (dashboardStats?.farmers_registered?.growth || "+28%"),
-      icon: Users,
+      title: "AI Models",
+      value: loading ? "Loading..." : (dashboardStats?.ai_models?.value || "3+"),
+      change: loading ? "" : (dashboardStats?.ai_models?.growth || "Active"),
+      icon: Zap,
       color: "text-success"
     },
     {
-      title: "Soil Analyses",
-      value: loading ? "Loading..." : (dashboardStats?.soil_analyses?.value || "8,420"),
-      change: loading ? "" : (dashboardStats?.soil_analyses?.growth || "+35%"),
-      icon: Microscope,
+      title: "Crop Database",
+      value: loading ? "Loading..." : (dashboardStats?.crop_database?.value || "50+"),
+      change: loading ? "" : (dashboardStats?.crop_database?.growth || "Varieties"),
+      icon: Shield,
       color: "text-warning"
     },
     {
-      title: "Crop Recommendations",
-      value: loading ? "Loading..." : (dashboardStats?.crop_recommendations?.value || "22,150"),
-      change: loading ? "" : (dashboardStats?.crop_recommendations?.growth || "+42%"),
+      title: "API Endpoints",
+      value: loading ? "Loading..." : (dashboardStats?.api_endpoints?.value || "12"),
+      change: loading ? "" : (dashboardStats?.api_endpoints?.growth || "Ready"),
       icon: TrendingUp,
       color: "text-primary"
     },
     {
-      title: "Yield Improvement",
-      value: loading ? "Loading..." : (dashboardStats?.yield_improvement?.value || "18.5%"),
-      change: loading ? "" : (dashboardStats?.yield_improvement?.growth || "+12%"),
+      title: "ML Accuracy",
+      value: loading ? "Loading..." : (dashboardStats?.accuracy_rate?.value || "94.2%"),
+      change: loading ? "" : (dashboardStats?.accuracy_rate?.growth || "ML Model"),
       icon: BarChart3,
       color: "text-accent"
     }

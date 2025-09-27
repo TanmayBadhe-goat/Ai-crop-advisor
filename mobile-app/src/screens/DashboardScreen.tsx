@@ -33,34 +33,34 @@ const DashboardScreen = ({ navigation }: any) => {
   const fadeAnim = useState(new Animated.Value(0))[0];
   const slideAnim = useState(new Animated.Value(50))[0];
 
-  // Default stats as fallback for Smart India Hackathon
+  // Technical capabilities showcase for Smart India Hackathon
   const defaultStats: StatCard[] = [
     {
-      title: 'Farmers Registered',
-      value: '15,750+',
-      percentage: '+28%',
-      icon: 'account-group',
+      title: 'AI Models',
+      value: '3+',
+      percentage: 'Active',
+      icon: 'robot',
       color: '#4CAF50'
     },
     {
-      title: 'Soil Analyses',
-      value: '8,420',
-      percentage: '+35%',
-      icon: 'microscope',
+      title: 'Crop Database',
+      value: '50+',
+      percentage: 'Varieties',
+      icon: 'database',
       color: '#FF9800'
     },
     {
-      title: 'Crop Recommendations',
-      value: '22,150',
-      percentage: '+42%',
-      icon: 'leaf',
+      title: 'API Endpoints',
+      value: '12',
+      percentage: 'Ready',
+      icon: 'api',
       color: '#2196F3'
     },
     {
-      title: 'Yield Improvement',
-      value: '18.5%',
-      percentage: '+12%',
-      icon: 'trending-up',
+      title: 'ML Accuracy',
+      value: '94.2%',
+      percentage: 'ML Model',
+      icon: 'target',
       color: '#9C27B0'
     }
   ];
@@ -82,31 +82,31 @@ const DashboardScreen = ({ navigation }: any) => {
       if (response && response.success) {
         const apiStats: StatCard[] = [
           {
-            title: 'Farmers Registered',
-            value: response.stats.farmers_registered.value,
-            percentage: response.stats.farmers_registered.growth,
-            icon: 'account-group',
+            title: 'AI Models',
+            value: response.stats.ai_models.value,
+            percentage: response.stats.ai_models.growth,
+            icon: 'robot',
             color: '#4CAF50'
           },
           {
-            title: 'Soil Analyses',
-            value: response.stats.soil_analyses.value,
-            percentage: response.stats.soil_analyses.growth,
-            icon: 'microscope',
+            title: 'Crop Database',
+            value: response.stats.crop_database.value,
+            percentage: response.stats.crop_database.growth,
+            icon: 'database',
             color: '#FF9800'
           },
           {
-            title: 'Crop Recommendations',
-            value: response.stats.crop_recommendations.value,
-            percentage: response.stats.crop_recommendations.growth,
-            icon: 'leaf',
+            title: 'API Endpoints',
+            value: response.stats.api_endpoints.value,
+            percentage: response.stats.api_endpoints.growth,
+            icon: 'api',
             color: '#2196F3'
           },
           {
-            title: 'Yield Improvement',
-            value: response.stats.yield_improvement.value,
-            percentage: response.stats.yield_improvement.growth,
-            icon: 'trending-up',
+            title: 'ML Accuracy',
+            value: response.stats.accuracy_rate.value,
+            percentage: response.stats.accuracy_rate.growth,
+            icon: 'target',
             color: '#9C27B0'
           }
         ];
