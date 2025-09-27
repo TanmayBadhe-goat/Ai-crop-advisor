@@ -8,6 +8,39 @@ const API_URL = 'https://web-production-e2f4f.up.railway.app/';
 console.log('Using API URL:', API_URL);
 console.log('Platform:', Platform.OS);
 
+// Configure axios defaults for better mobile network handling
+axios.defaults.timeout = 15000;
+axios.defaults.headers.common['Cache-Control'] = 'no-cache';
+axios.defaults.headers.common['Pragma'] = 'no-cache';
+
+// Retry utility function with exponential backoff
+const retryWithBackoff = async <T>(
+  fn: () => Promise<T>,
+  maxRetries: number = 2,
+  baseDelay: number = 1000
+): Promise<T> => {
+  let lastError: any;
+  
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      return await fn();
+    } catch (error) {
+      lastError = error;
+      
+      if (attempt === maxRetries) {
+        throw error;
+      }
+      
+      // Exponential backoff: 1s, 2s, 4s...
+      const delay = baseDelay * Math.pow(2, attempt);
+      console.log(`Attempt ${attempt + 1} failed, retrying in ${delay}ms...`);
+      await new Promise(resolve => setTimeout(resolve, delay));
+    }
+  }
+  
+  throw lastError;
+};
+
 // Types
 export interface CropPredictionRequest {
   nitrogen: number;
@@ -121,13 +154,49 @@ export interface DashboardStatsResponse {
 export const cropService = {
   // Get crop recommendation
   predictCrop: async (data: CropPredictionRequest): Promise<CropPredictionResponse> => {
-    try {
-      const response = await axios.post(`${API_URL}/api/predict`, data);
+    return retryWithBackoff(async () => {
+      console.log('Sending crop prediction request to:', `${API_URL}/api/predict`);
+      console.log('Request data:', data);
+      
+      const response = await axios.post(`${API_URL}/api/predict`, data, {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        timeout: 12000, // 12 second timeout for faster retry
+        // Add cache-busting parameter
+        params: {
+          _t: Date.now()
+        }
+      });
+      
+      console.log('Crop prediction response:', response.data);
+      
+      if (!response.data.success) {
+        throw new Error(response.data.error || 'Prediction failed');
+      }
+      
       return response.data;
-    } catch (error) {
-      console.error('Error predicting crop:', error);
+    }, 2, 1000).catch(error => {
+      console.error('Error predicting crop after retries:', error);
+      
+      // Enhanced error handling for network issues
+      if (axios.isAxiosError(error)) {
+        if (error.code === 'ECONNABORTED') {
+          throw new Error('Request timeout - please check your internet connection and try again');
+        } else if (error.response) {
+          console.error('Response error:', error.response.status, error.response.data);
+          throw new Error(`Server error: ${error.response.status} - ${error.response.data?.error || 'Unknown error'}`);
+        } else if (error.request) {
+          console.error('Network error - no response received');
+          throw new Error('Network error: Unable to reach server. Please check your internet connection.');
+        } else {
+          console.error('Request setup error:', error.message);
+          throw new Error(`Request error: ${error.message}`);
+        }
+      }
+      
       throw error;
-    }
+    });
   },
 
   // Get weather data
