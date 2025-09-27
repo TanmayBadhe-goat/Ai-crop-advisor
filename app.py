@@ -8,6 +8,7 @@ import pickle
 import numpy as np
 import base64
 import io
+from crops_dataset import CROP_INFO, AGRICULTURAL_KNOWLEDGE, get_crop_info, get_all_crop_names, search_crops
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -38,105 +39,7 @@ except Exception as e:
     scaler = None
     logger.warning(f"❌ Could not load crop prediction model: {e}")
 
-# Crop information database
-CROP_INFO = {
-    'rice': {
-        'emoji': '🌾',
-        'season': 'Kharif (June-October)',
-        'duration': '120-150 days',
-        'yield': '40-60 quintals/hectare',
-        'market_price': '₹2000-2500/quintal',
-        'tips': 'Maintain 2-5cm water level. Apply fertilizers in split doses. Harvest when 80% grains turn golden.'
-    },
-    'wheat': {
-        'emoji': '🌾',
-        'season': 'Rabi (November-April)',
-        'duration': '120-140 days',
-        'yield': '35-50 quintals/hectare',
-        'market_price': '₹2100-2400/quintal',
-        'tips': 'Sow in well-prepared field. Irrigate 4-6 times. Apply nitrogen in 3 split doses.'
-    },
-    'maize': {
-        'emoji': '🌽',
-        'season': 'Kharif & Rabi',
-        'duration': '90-120 days',
-        'yield': '50-80 quintals/hectare',
-        'market_price': '₹1800-2200/quintal',
-        'tips': 'Plant in rows with proper spacing. Apply balanced fertilizers. Control stem borer and fall armyworm.'
-    },
-    'cotton': {
-        'emoji': '🌿',
-        'season': 'Kharif (April-October)',
-        'duration': '180-200 days',
-        'yield': '15-25 quintals/hectare',
-        'market_price': '₹5500-6500/quintal',
-        'tips': 'Deep ploughing required. Monitor for bollworm. Pick cotton when bolls are fully opened.'
-    },
-    'sugarcane': {
-        'emoji': '🎋',
-        'season': 'Year-round',
-        'duration': '12-18 months',
-        'yield': '800-1200 quintals/hectare',
-        'market_price': '₹300-350/quintal',
-        'tips': 'Plant healthy seed cane. Maintain adequate moisture. Harvest at proper maturity for maximum sugar content.'
-    },
-    'potato': {
-        'emoji': '🥔',
-        'season': 'Rabi (October-March)',
-        'duration': '90-120 days',
-        'yield': '250-400 quintals/hectare',
-        'market_price': '₹800-1500/quintal',
-        'tips': 'Plant certified seed potatoes. Earth up regularly. Control late blight disease.'
-    },
-    'tomato': {
-        'emoji': '🍅',
-        'season': 'Kharif & Rabi',
-        'duration': '120-150 days',
-        'yield': '400-600 quintals/hectare',
-        'market_price': '₹1000-2000/quintal',
-        'tips': 'Use disease-resistant varieties. Provide support to plants. Regular pruning increases yield.'
-    },
-    'banana': {
-        'emoji': '🍌',
-        'season': 'Year-round',
-        'duration': '12-15 months',
-        'yield': '400-600 quintals/hectare',
-        'market_price': '₹1200-1800/quintal',
-        'tips': 'Plant tissue culture plants. Maintain adequate drainage. Remove excess suckers regularly.'
-    },
-    'coconut': {
-        'emoji': '🥥',
-        'season': 'Year-round',
-        'duration': '6-10 years to bear',
-        'yield': '80-120 nuts/palm/year',
-        'market_price': '₹15-25/nut',
-        'tips': 'Plant hybrid varieties. Provide adequate irrigation. Control rhinoceros beetle and red palm weevil.'
-    },
-    'apple': {
-        'emoji': '🍎',
-        'season': 'Temperate regions',
-        'duration': '3-5 years to bear',
-        'yield': '200-400 quintals/hectare',
-        'market_price': '₹4000-8000/quintal',
-        'tips': 'Requires cold climate. Proper pruning essential. Control apple scab and codling moth.'
-    },
-    'grapes': {
-        'emoji': '🍇',
-        'season': 'Year-round (varies by region)',
-        'duration': '2-3 years to bear',
-        'yield': '200-400 quintals/hectare',
-        'market_price': '₹3000-6000/quintal',
-        'tips': 'Requires well-drained soil. Proper training and pruning. Control downy mildew and powdery mildew.'
-    },
-    'orange': {
-        'emoji': '🍊',
-        'season': 'Year-round',
-        'duration': '3-4 years to bear',
-        'yield': '300-500 quintals/hectare',
-        'market_price': '₹2000-4000/quintal',
-        'tips': 'Plant grafted saplings. Maintain soil pH 6.0-7.5. Control citrus canker and fruit fly.'
-    }
-}
+# Crop information is now imported from crops_dataset.py
 
 # Try to import optional dependencies
 try:
@@ -161,120 +64,14 @@ except ImportError:
     REQUESTS_AVAILABLE = False
     logger.warning("❌ Requests library not available")
 
-# Agricultural Knowledge Base for Fallback
-agricultural_knowledge = {
-    'rice': {
-        'keywords': ['rice', 'paddy', 'chawal', 'धान'],
-        'responses': [
-            "🌾 Rice grows best in flooded fields with temperatures 20-35°C. Plant during monsoon (June-July) for Kharif season.",
-            "🌾 For rice cultivation: Use 120kg N, 60kg P2O5, 40kg K2O per hectare. Maintain 2-5cm water level.",
-            "🌾 Rice varieties: Basmati for export, IR64 for high yield. Harvest when 80% grains turn golden yellow."
-        ]
-    },
-    'wheat': {
-        'keywords': ['wheat', 'gehun', 'गेहूं'],
-        'responses': [
-            "🌾 Wheat is a Rabi crop. Sow in November-December, harvest in March-April. Needs 15-25°C temperature.",
-            "🌾 For wheat: Apply 150kg N, 75kg P2O5, 60kg K2O per hectare. Irrigate 4-6 times during growing season.",
-            "🌾 Popular wheat varieties: HD2967, PBW343, DBW17. Ensure proper drainage to prevent waterlogging."
-        ]
-    },
-    'maize': {
-        'keywords': ['maize', 'corn', 'makka', 'मक्का'],
-        'responses': [
-            "🌽 Maize grows in both Kharif and Rabi seasons. Requires well-drained soil and 21-27°C temperature.",
-            "🌽 For maize: Apply 120kg N, 60kg P2O5, 40kg K2O per hectare. Plant with 60cm row spacing.",
-            "🌽 Control stem borer and fall armyworm. Harvest when kernels are hard and moisture is 15-20%."
-        ]
-    },
-    'cotton': {
-        'keywords': ['cotton', 'kapas', 'कपास'],
-        'responses': [
-            "🌿 Cotton is a Kharif crop requiring 180-200 frost-free days. Plant in April-June with black cotton soil.",
-            "🌿 For cotton: Apply 120kg N, 60kg P2O5, 30kg K2O per hectare. Maintain soil moisture at 70-80%.",
-            "🌿 Monitor for bollworm, whitefly, and pink bollworm. Pick cotton when bolls are fully opened."
-        ]
-    },
-    'tomato': {
-        'keywords': ['tomato', 'tamatar', 'टमाटर'],
-        'responses': [
-            "🍅 Tomatoes grow year-round with proper care. Require well-drained soil and 20-25°C temperature.",
-            "🍅 For tomatoes: Apply 100kg N, 50kg P2O5, 50kg K2O per hectare. Provide support stakes.",
-            "🍅 Control early blight, late blight, and fruit borer. Harvest when fruits are firm and red."
-        ]
-    },
-    'potato': {
-        'keywords': ['potato', 'aloo', 'आलू'],
-        'responses': [
-            "🥔 Potatoes are Rabi crops planted in October-November. Require cool weather and well-drained soil.",
-            "🥔 For potatoes: Apply 120kg N, 60kg P2O5, 60kg K2O per hectare. Earth up regularly.",
-            "🥔 Control late blight and potato tuber moth. Harvest when plants turn yellow and dry."
-        ]
-    },
-    'fertilizer': {
-        'keywords': ['fertilizer', 'khad', 'खाद', 'urea', 'dap', 'npk'],
-        'responses': [
-            "🌱 NPK fertilizers: N for leaf growth, P for roots/flowers, K for disease resistance. Test soil before applying.",
-            "🌱 Organic fertilizers: Compost, vermicompost, green manure improve soil health long-term.",
-            "🌱 Apply fertilizers in split doses: 1/3 at sowing, 1/3 at vegetative stage, 1/3 at flowering."
-        ]
-    },
-    'irrigation': {
-        'keywords': ['irrigation', 'water', 'watering', 'सिंचाई', 'पानी'],
-        'responses': [
-            "💧 Drip irrigation saves 30-50% water compared to flood irrigation. Best for water-scarce areas.",
-            "💧 Water crops early morning or evening to reduce evaporation. Check soil moisture regularly.",
-            "💧 Critical irrigation stages: germination, flowering, and grain filling. Avoid waterlogging."
-        ]
-    },
-    'pest_control': {
-        'keywords': ['pest', 'insect', 'bug', 'कीट', 'disease', 'बीमारी'],
-        'responses': [
-            "🐛 Use IPM (Integrated Pest Management): biological, cultural, and chemical methods together.",
-            "🐛 Neem oil is effective against aphids, whiteflies, and thrips. Spray during cooler hours.",
-            "🐛 Monitor crops regularly. Use pheromone traps and beneficial insects like ladybugs."
-        ]
-    },
-    'soil': {
-        'keywords': ['soil', 'मिट्टी', 'ph', 'nutrients', 'testing'],
-        'responses': [
-            "🌱 Test soil pH annually. Most crops prefer 6.0-7.5 pH. Add lime to increase, sulfur to decrease pH.",
-            "🌱 Soil health indicators: organic matter, water retention, and microbial activity.",
-            "🌱 Add compost and crop rotation to improve soil structure and fertility naturally."
-        ]
-    },
-    'weather': {
-        'keywords': ['weather', 'rain', 'temperature', 'मौसम', 'climate'],
-        'responses': [
-            "🌤️ Monitor weather forecasts for irrigation and pest management decisions.",
-            "🌤️ Protect crops from extreme weather: use mulching, shade nets, and windbreaks.",
-            "🌤️ Adjust planting dates based on monsoon predictions and temperature patterns."
-        ]
-    },
-    'organic': {
-        'keywords': ['organic', 'natural', 'जैविक', 'compost', 'vermicompost'],
-        'responses': [
-            "🌿 Organic farming uses natural inputs: compost, biofertilizers, and biopesticides.",
-            "🌿 Vermicompost provides slow-release nutrients and improves soil structure.",
-            "🌿 Crop rotation and green manuring are key practices in organic farming."
-        ]
-    },
-    'seeds': {
-        'keywords': ['seed', 'variety', 'बीज', 'planting', 'sowing'],
-        'responses': [
-            "🌱 Use certified seeds from authorized dealers. Check germination rate before sowing.",
-            "🌱 Treat seeds with fungicide or bioagents to prevent soil-borne diseases.",
-            "🌱 Choose varieties suitable for your region's climate and soil conditions."
-        ]
-    }
-}
+# Agricultural Knowledge Base is now imported from crops_dataset.py
 
 def get_fallback_response(user_message):
     """Generate intelligent fallback response based on agricultural knowledge"""
     user_message_lower = user_message.lower()
     
     # Check for specific crop mentions first
-    for crop, data in agricultural_knowledge.items():
+    for crop, data in AGRICULTURAL_KNOWLEDGE.items():
         if 'keywords' in data:
             for keyword in data['keywords']:
                 if keyword.lower() in user_message_lower:
@@ -743,7 +540,7 @@ def test_fallback():
         'success': True,
         'test_results': results,
         'total_questions': len(test_questions),
-        'knowledge_base_topics': list(agricultural_knowledge.keys())
+        'knowledge_base_topics': list(AGRICULTURAL_KNOWLEDGE.keys())
     })
 
 @app.route('/api/test-gemini', methods=['POST'])
@@ -847,17 +644,118 @@ def weather():
 def dashboard_stats():
     """Get technical capabilities showcase for Smart India Hackathon"""
     current_month = datetime.datetime.now().month
+    total_crops = len(get_all_crop_names())
     
     return jsonify({
         'success': True,
         'stats': {
             'ai_models': {'value': '3+', 'growth': 'Active'},
-            'crop_database': {'value': '50+', 'growth': 'Varieties'},
-            'api_endpoints': {'value': '12', 'growth': 'Ready'},
+            'crop_database': {'value': f'{total_crops}+', 'growth': 'Varieties'},
+            'api_endpoints': {'value': '15', 'growth': 'Ready'},
             'accuracy_rate': {'value': '94.2%', 'growth': 'ML Model'}
         },
         'last_updated': datetime.datetime.now().isoformat()
     })
+
+@app.route('/api/crops', methods=['GET'])
+def get_crops():
+    """Get all available crops in the database"""
+    try:
+        all_crops = []
+        for crop_name in get_all_crop_names():
+            crop_info = get_crop_info(crop_name)
+            if crop_info:
+                all_crops.append({
+                    'name': crop_name.title(),
+                    'emoji': crop_info.get('emoji', '🌱'),
+                    'category': crop_info.get('category', 'Unknown'),
+                    'season': crop_info.get('season', 'Unknown'),
+                    'duration': crop_info.get('duration', 'Unknown')
+                })
+        
+        return jsonify({
+            'success': True,
+            'total_crops': len(all_crops),
+            'crops': all_crops,
+            'categories': {
+                'cereals': len([c for c in all_crops if c['category'] == 'Cereal']),
+                'vegetables': len([c for c in all_crops if c['category'] == 'Vegetable']),
+                'fruits': len([c for c in all_crops if c['category'] == 'Fruit']),
+                'cash_crops': len([c for c in all_crops if c['category'] == 'Cash Crop']),
+                'pulses': len([c for c in all_crops if c['category'] == 'Pulse']),
+                'oilseeds': len([c for c in all_crops if c['category'] == 'Oilseed']),
+                'spices': len([c for c in all_crops if c['category'] == 'Spice']),
+                'others': len([c for c in all_crops if c['category'] not in ['Cereal', 'Vegetable', 'Fruit', 'Cash Crop', 'Pulse', 'Oilseed', 'Spice']])
+            }
+        })
+    except Exception as e:
+        logger.error(f"Error fetching crops: {e}")
+        return jsonify({
+            'success': False,
+            'error': 'Failed to fetch crops data'
+        }), 500
+
+@app.route('/api/crops/<crop_name>', methods=['GET'])
+def get_crop_details(crop_name):
+    """Get detailed information about a specific crop"""
+    try:
+        crop_info = get_crop_info(crop_name.lower())
+        if not crop_info:
+            return jsonify({
+                'success': False,
+                'error': f'Crop "{crop_name}" not found in database'
+            }), 404
+        
+        return jsonify({
+            'success': True,
+            'crop_name': crop_name.title(),
+            'crop_info': crop_info
+        })
+    except Exception as e:
+        logger.error(f"Error fetching crop details: {e}")
+        return jsonify({
+            'success': False,
+            'error': 'Failed to fetch crop details'
+        }), 500
+
+@app.route('/api/crops/search', methods=['POST'])
+def search_crops_endpoint():
+    """Search crops by name or category"""
+    try:
+        data = request.json
+        query = data.get('query', '')
+        
+        if not query:
+            return jsonify({
+                'success': False,
+                'error': 'Search query is required'
+            }), 400
+        
+        results = search_crops(query)
+        crop_details = []
+        
+        for crop_name in results:
+            crop_info = get_crop_info(crop_name)
+            if crop_info:
+                crop_details.append({
+                    'name': crop_name.title(),
+                    'emoji': crop_info.get('emoji', '🌱'),
+                    'category': crop_info.get('category', 'Unknown'),
+                    'season': crop_info.get('season', 'Unknown')
+                })
+        
+        return jsonify({
+            'success': True,
+            'query': query,
+            'total_results': len(crop_details),
+            'crops': crop_details
+        })
+    except Exception as e:
+        logger.error(f"Error searching crops: {e}")
+        return jsonify({
+            'success': False,
+            'error': 'Failed to search crops'
+        }), 500
 
 @app.route('/api/crop-calendar', methods=['GET'])
 def crop_calendar():
