@@ -6,6 +6,8 @@ import random
 import datetime
 import pickle
 import numpy as np
+import base64
+import io
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -358,6 +360,121 @@ def get_rule_based_prediction(nitrogen, phosphorus, potassium, temperature, humi
         },
         'note': 'Prediction based on agricultural rules (ML model not available)'
     })
+
+@app.route('/api/upload-image', methods=['POST'])
+def upload_image():
+    """Upload and convert image to base64 for disease detection"""
+    try:
+        if 'image' not in request.files:
+            return jsonify({'success': False, 'error': 'No image file provided'}), 400
+        
+        file = request.files['image']
+        if file.filename == '':
+            return jsonify({'success': False, 'error': 'No image file selected'}), 400
+        
+        # Read the image file
+        image_data = file.read()
+        
+        # Convert to base64
+        image_base64 = base64.b64encode(image_data).decode('utf-8')
+        
+        logger.info(f"Image uploaded successfully, size: {len(image_data)} bytes")
+        
+        return jsonify({
+            'success': True,
+            'image_base64': image_base64,
+            'message': 'Image uploaded successfully'
+        })
+        
+    except Exception as e:
+        logger.error(f"Image upload error: {e}")
+        return jsonify({
+            'success': False,
+            'error': 'Failed to upload image'
+        }), 500
+
+@app.route('/api/disease-detection', methods=['POST'])
+def detect_disease():
+    """Detect plant disease from base64 image (mock implementation)"""
+    try:
+        data = request.json
+        
+        if not data or 'image_base64' not in data:
+            return jsonify({'success': False, 'error': 'No image data provided'}), 400
+        
+        image_base64 = data['image_base64']
+        
+        if not image_base64:
+            return jsonify({'success': False, 'error': 'Empty image data'}), 400
+        
+        logger.info("Processing disease detection request")
+        
+        # Mock disease detection (replace with actual ML model when available)
+        diseases = [
+            {
+                'name': 'Leaf Blight',
+                'confidence': 0.85,
+                'severity': 'Moderate',
+                'emoji': '🍃',
+                'description': 'A common fungal disease affecting leaves, causing brown spots and yellowing.',
+                'treatment': 'Apply copper-based fungicide spray every 7-10 days. Remove affected leaves immediately.',
+                'prevention': 'Ensure proper air circulation, avoid overhead watering, and maintain field hygiene.'
+            },
+            {
+                'name': 'Powdery Mildew',
+                'confidence': 0.78,
+                'severity': 'Mild',
+                'emoji': '🌿',
+                'description': 'White powdery coating on leaves and stems, reducing photosynthesis.',
+                'treatment': 'Spray with neem oil or sulfur-based fungicide. Improve air circulation.',
+                'prevention': 'Plant resistant varieties, avoid overcrowding, and water at soil level.'
+            },
+            {
+                'name': 'Bacterial Wilt',
+                'confidence': 0.92,
+                'severity': 'Severe',
+                'emoji': '🦠',
+                'description': 'Bacterial infection causing wilting and yellowing of plants.',
+                'treatment': 'Remove infected plants immediately. Apply copper sulfate solution to soil.',
+                'prevention': 'Use disease-free seeds, practice crop rotation, and maintain proper drainage.'
+            },
+            {
+                'name': 'Healthy Plant',
+                'confidence': 0.95,
+                'severity': 'None',
+                'emoji': '✅',
+                'description': 'Plant appears healthy with no visible signs of disease.',
+                'treatment': 'No treatment needed. Continue regular care and monitoring.',
+                'prevention': 'Maintain current care practices and monitor for any changes.'
+            }
+        ]
+        
+        # Randomly select a disease for demonstration
+        detected_disease = random.choice(diseases)
+        
+        logger.info(f"Disease detection result: {detected_disease['name']} (confidence: {detected_disease['confidence']:.2f})")
+        
+        return jsonify({
+            'success': True,
+            'disease': {
+                'name': detected_disease['name'],
+                'confidence': detected_disease['confidence'],
+                'severity': detected_disease['severity'],
+                'emoji': detected_disease['emoji']
+            },
+            'diagnosis': {
+                'description': detected_disease['description'],
+                'treatment': detected_disease['treatment'],
+                'prevention': detected_disease['prevention']
+            }
+        })
+        
+    except Exception as e:
+        logger.error(f"Disease detection error: {e}")
+        return jsonify({
+            'success': False,
+            'error': 'Failed to detect disease'
+        }), 500
 
 @app.route('/')
 def home():
