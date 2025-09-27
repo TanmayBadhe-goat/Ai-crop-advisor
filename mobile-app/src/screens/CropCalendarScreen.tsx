@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, ScrollView, TouchableOpacity, Dimensions } from 'react-native';
-import { Card, Title, Paragraph, Text, Button, Chip } from 'react-native-paper';
+import { Card, Title, Paragraph, Text, Button, Chip, Divider } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 const { width } = Dimensions.get('window');
@@ -14,6 +14,18 @@ interface CropSeason {
   duration: string;
   tips: string;
   color: string;
+  yield?: string;
+  marketPrice?: string;
+}
+
+interface CalendarEvent {
+  id: string;
+  title: string;
+  date: string;
+  type: "sowing" | "irrigation" | "fertilizer" | "harvest";
+  crop: string;
+  description: string;
+  priority: "High" | "Medium" | "Low";
 }
 
 const CropCalendarScreen = ({ navigation }: any) => {
@@ -27,6 +39,65 @@ const CropCalendarScreen = ({ navigation }: any) => {
 
   const seasons = ['All', 'Kharif', 'Rabi', 'Zaid'];
 
+  const upcomingEvents: CalendarEvent[] = [
+    {
+      id: "1",
+      title: "Rice Transplanting",
+      date: "Tomorrow",
+      type: "sowing",
+      crop: "Rice",
+      description: "Optimal time for rice transplanting in Kharif season",
+      priority: "High"
+    },
+    {
+      id: "2",
+      title: "Wheat Irrigation",
+      date: "In 3 days",
+      type: "irrigation",
+      crop: "Wheat",
+      description: "Second irrigation recommended for wheat crop",
+      priority: "High"
+    },
+    {
+      id: "3",
+      title: "Cotton Fertilizer",
+      date: "In 5 days",
+      type: "fertilizer",
+      crop: "Cotton",
+      description: "Apply NPK fertilizer for cotton flowering stage",
+      priority: "Medium"
+    },
+    {
+      id: "4",
+      title: "Tomato Harvest",
+      date: "In 1 week",
+      type: "harvest",
+      crop: "Tomato",
+      description: "First harvest of tomato crop ready",
+      priority: "High"
+    }
+  ];
+
+  const getEventIcon = (type: string) => {
+    switch (type) {
+      case "sowing": return "seed";
+      case "irrigation": return "water";
+      case "fertilizer": return "flask";
+      case "harvest": return "scissors-cutting";
+      default: return "calendar";
+    }
+  };
+
+  const getEventColor = (type: string) => {
+    switch (type) {
+      case "sowing": return "#4CAF50";
+      case "irrigation": return "#2196F3";
+      case "fertilizer": return "#FF9800";
+      case "harvest": return "#F44336";
+      default: return "#666";
+    }
+  };
+
   const cropCalendar: CropSeason[] = [
     {
       crop: 'Rice',
@@ -36,7 +107,9 @@ const CropCalendarScreen = ({ navigation }: any) => {
       harvestMonths: ['Oct', 'Nov', 'Dec'],
       duration: '120-150 days',
       tips: 'Plant during monsoon. Requires flooded fields.',
-      color: '#4CAF50'
+      color: '#4CAF50',
+      yield: '3-4 tonnes/hectare',
+      marketPrice: '₹2000-2500/quintal'
     },
     {
       crop: 'Wheat',
@@ -46,7 +119,9 @@ const CropCalendarScreen = ({ navigation }: any) => {
       harvestMonths: ['Mar', 'Apr', 'May'],
       duration: '120-150 days',
       tips: 'Plant in winter. Requires cool weather for growth.',
-      color: '#FF9800'
+      color: '#FF9800',
+      yield: '3-4 tonnes/hectare',
+      marketPrice: '₹2100-2400/quintal'
     },
     {
       crop: 'Maize',
@@ -56,7 +131,9 @@ const CropCalendarScreen = ({ navigation }: any) => {
       harvestMonths: ['Sep', 'Oct'],
       duration: '90-120 days',
       tips: 'Can be grown year-round with irrigation.',
-      color: '#FFC107'
+      color: '#FFC107',
+      yield: '5-8 tonnes/hectare',
+      marketPrice: '₹1800-2200/quintal'
     },
     {
       crop: 'Cotton',
@@ -66,7 +143,9 @@ const CropCalendarScreen = ({ navigation }: any) => {
       harvestMonths: ['Oct', 'Nov', 'Dec'],
       duration: '180-200 days',
       tips: 'Requires warm weather and moderate rainfall.',
-      color: '#E91E63'
+      color: '#E91E63',
+      yield: '1.5-2 tonnes/hectare',
+      marketPrice: '₹5500-6500/quintal'
     },
     {
       crop: 'Sugarcane',
@@ -76,7 +155,9 @@ const CropCalendarScreen = ({ navigation }: any) => {
       harvestMonths: ['Dec', 'Jan', 'Feb', 'Mar'],
       duration: '12-18 months',
       tips: 'Long duration crop. Plant in spring or autumn.',
-      color: '#9C27B0'
+      color: '#9C27B0',
+      yield: '70-80 tonnes/hectare',
+      marketPrice: '₹300-350/quintal'
     },
     {
       crop: 'Potato',
@@ -86,7 +167,9 @@ const CropCalendarScreen = ({ navigation }: any) => {
       harvestMonths: ['Jan', 'Feb', 'Mar'],
       duration: '90-120 days',
       tips: 'Cool weather crop. Avoid frost during harvest.',
-      color: '#795548'
+      color: '#795548',
+      yield: '25-40 tonnes/hectare',
+      marketPrice: '₹800-1500/quintal'
     },
     {
       crop: 'Tomato',
@@ -96,7 +179,9 @@ const CropCalendarScreen = ({ navigation }: any) => {
       harvestMonths: ['Sep', 'Oct', 'Jan', 'Feb'],
       duration: '90-120 days',
       tips: 'Can be grown in multiple seasons with proper care.',
-      color: '#F44336'
+      color: '#F44336',
+      yield: '40-60 tonnes/hectare',
+      marketPrice: '₹1000-2000/quintal'
     },
     {
       crop: 'Mustard',
@@ -106,7 +191,9 @@ const CropCalendarScreen = ({ navigation }: any) => {
       harvestMonths: ['Feb', 'Mar'],
       duration: '90-110 days',
       tips: 'Cool season oilseed crop.',
-      color: '#FFEB3B'
+      color: '#FFEB3B',
+      yield: '1-1.5 tonnes/hectare',
+      marketPrice: '₹4500-5500/quintal'
     }
   ];
 
@@ -229,7 +316,7 @@ const CropCalendarScreen = ({ navigation }: any) => {
             {cropsToHarvest.length > 0 && (
               <View style={styles.activitySection}>
                 <View style={styles.activityHeader}>
-                  <MaterialCommunityIcons name="harvest" size={20} color="#FF9800" />
+                  <MaterialCommunityIcons name="scissors-cutting" size={20} color="#FF9800" />
                   <Text style={styles.activityTitle}>Time to Harvest</Text>
                 </View>
                 <View style={styles.cropList}>
@@ -257,6 +344,75 @@ const CropCalendarScreen = ({ navigation }: any) => {
           </Card.Content>
         </Card>
 
+        {/* Upcoming Events */}
+        <Card style={styles.sectionCard}>
+          <Card.Content>
+            <Title style={styles.sectionTitle}>Upcoming Events</Title>
+            <View style={styles.eventsContainer}>
+              {upcomingEvents.map((event) => (
+                <View key={event.id} style={styles.eventItem}>
+                  <View style={[styles.eventIcon, { backgroundColor: getEventColor(event.type) + '20' }]}>
+                    <MaterialCommunityIcons 
+                      name={getEventIcon(event.type) as any} 
+                      size={20} 
+                      color={getEventColor(event.type)} 
+                    />
+                  </View>
+                  <View style={styles.eventContent}>
+                    <View style={styles.eventHeader}>
+                      <Text style={styles.eventTitle}>{event.title}</Text>
+                      <View style={[styles.priorityBadge, { 
+                        backgroundColor: event.priority === 'High' ? '#FF5722' : 
+                                       event.priority === 'Medium' ? '#FF9800' : '#4CAF50' 
+                      }]}>
+                        <Text style={styles.priorityText}>{event.crop}</Text>
+                      </View>
+                    </View>
+                    <Text style={styles.eventDescription}>{event.description}</Text>
+                    <View style={styles.eventFooter}>
+                      <Text style={styles.eventDate}>{event.date}</Text>
+                      <Text style={styles.eventType}>{event.type.toUpperCase()}</Text>
+                    </View>
+                  </View>
+                </View>
+              ))}
+            </View>
+          </Card.Content>
+        </Card>
+
+        {/* Weather-Based Recommendations */}
+        <Card style={[styles.sectionCard, styles.weatherCard]}>
+          <Card.Content>
+            <View style={styles.weatherHeader}>
+              <MaterialCommunityIcons name="weather-partly-cloudy" size={24} color="#2196F3" />
+              <Title style={[styles.sectionTitle, { marginBottom: 0, marginLeft: 8 }]}>
+                Weather Recommendations
+              </Title>
+            </View>
+            <Divider style={{ marginVertical: 12 }} />
+            <View style={styles.recommendationsList}>
+              <View style={styles.recommendationItem}>
+                <MaterialCommunityIcons name="water" size={16} color="#2196F3" />
+                <Text style={styles.recommendationText}>
+                  Current conditions are favorable for field activities
+                </Text>
+              </View>
+              <View style={styles.recommendationItem}>
+                <MaterialCommunityIcons name="weather-sunny" size={16} color="#FF9800" />
+                <Text style={styles.recommendationText}>
+                  No rain expected for the next 3 days - perfect for harvesting
+                </Text>
+              </View>
+              <View style={styles.recommendationItem}>
+                <MaterialCommunityIcons name="thermometer" size={16} color="#4CAF50" />
+                <Text style={styles.recommendationText}>
+                  Optimal temperature range for field preparation activities
+                </Text>
+              </View>
+            </View>
+          </Card.Content>
+        </Card>
+
         {/* All Crops */}
         <Card style={styles.sectionCard}>
           <Card.Content>
@@ -281,7 +437,7 @@ const CropCalendarScreen = ({ navigation }: any) => {
                         </Text>
                       </View>
                       <View style={styles.cropDetailRow}>
-                        <MaterialCommunityIcons name="harvest" size={16} color="#FF9800" />
+                        <MaterialCommunityIcons name="scissors-cutting" size={16} color="#FF9800" />
                         <Text style={styles.cropDetailText}>
                           Harvest: {crop.harvestMonths.join(', ')}
                         </Text>
@@ -292,6 +448,22 @@ const CropCalendarScreen = ({ navigation }: any) => {
                           Duration: {crop.duration}
                         </Text>
                       </View>
+                      {crop.yield && (
+                        <View style={styles.cropDetailRow}>
+                          <MaterialCommunityIcons name="chart-line" size={16} color="#9C27B0" />
+                          <Text style={styles.cropDetailText}>
+                            Yield: {crop.yield}
+                          </Text>
+                        </View>
+                      )}
+                      {crop.marketPrice && (
+                        <View style={styles.cropDetailRow}>
+                          <MaterialCommunityIcons name="currency-inr" size={16} color="#4CAF50" />
+                          <Text style={styles.cropDetailText}>
+                            Price: {crop.marketPrice}
+                          </Text>
+                        </View>
+                      )}
                     </View>
                     
                     <Text style={styles.cropTips}>{crop.tips}</Text>
@@ -483,6 +655,99 @@ const styles = StyleSheet.create({
   },
   bottomSpacing: {
     height: 20,
+  },
+  // New styles for upcoming events
+  eventsContainer: {
+    marginTop: 8,
+  },
+  eventItem: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    padding: 12,
+    marginBottom: 12,
+    backgroundColor: '#FAFAFA',
+    borderRadius: 8,
+    borderLeftWidth: 3,
+    borderLeftColor: '#4CAF50',
+  },
+  eventIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  eventContent: {
+    flex: 1,
+  },
+  eventHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  eventTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#333',
+    flex: 1,
+  },
+  priorityBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 12,
+    marginLeft: 8,
+  },
+  priorityText: {
+    fontSize: 10,
+    color: 'white',
+    fontWeight: 'bold',
+  },
+  eventDescription: {
+    fontSize: 12,
+    color: '#666',
+    marginBottom: 8,
+  },
+  eventFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  eventDate: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    color: '#4CAF50',
+  },
+  eventType: {
+    fontSize: 10,
+    color: '#999',
+    textTransform: 'uppercase',
+  },
+  // Weather recommendations styles
+  weatherCard: {
+    backgroundColor: '#F0F8FF',
+    borderColor: '#2196F3',
+    borderWidth: 1,
+  },
+  weatherHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  recommendationsList: {
+    marginTop: 8,
+  },
+  recommendationItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+    paddingVertical: 4,
+  },
+  recommendationText: {
+    fontSize: 14,
+    color: '#333',
+    marginLeft: 8,
+    flex: 1,
   },
 });
 
