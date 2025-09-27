@@ -17,7 +17,7 @@ app = Flask(__name__)
 CORS(app)
 
 # API Keys from environment variables
-GEMINI_API_KEY = os.environ.get('Gemini_API_key', 'AIzaSyD8Vb3TXMsoWVC9FAzBmdOXdhTHogBZeXk')
+GEMINI_API_KEY = os.environ.get('Gemini_API_key', 'AIzaSyCyqp4qFCtQcSpRXrDdfLw_6ywLzYBYZio')
 WEATHER_API_KEY = os.environ.get('Weather_API_key')
 GEMINI_MODEL = os.environ.get('GEMINI_MODEL', 'gemini-pro')
 
