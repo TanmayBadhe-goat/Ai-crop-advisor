@@ -176,15 +176,17 @@ def predict_crop():
                 # Map prediction to crop name (assuming the model outputs crop names)
                 predicted_crop = str(prediction).lower()
                 
-                # Get crop information
-                crop_info = CROP_INFO.get(predicted_crop, {
-                    'emoji': '🌱',
-                    'season': 'Varies by region',
-                    'duration': '90-150 days',
-                    'yield': 'Varies by variety',
-                    'market_price': 'Check local markets',
-                    'tips': 'Follow good agricultural practices for best results.'
-                })
+                # Get crop information from our comprehensive dataset
+                crop_info = get_crop_info(predicted_crop)
+                if not crop_info:
+                    crop_info = {
+                        'emoji': '🌱',
+                        'season': 'Varies by region',
+                        'duration': '90-150 days',
+                        'yield': 'Varies by variety',
+                        'market_price': 'Check local markets',
+                        'tips': 'Follow good agricultural practices for best results.'
+                    }
                 
                 logger.info(f"Crop prediction successful: {predicted_crop} (confidence: {confidence:.2f})")
                 
@@ -252,7 +254,18 @@ def get_rule_based_prediction(nitrogen, phosphorus, potassium, temperature, humi
         predicted_crop = 'maize'
         confidence = 0.70
     
-    crop_info = CROP_INFO.get(predicted_crop, CROP_INFO['maize'])
+    crop_info = get_crop_info(predicted_crop)
+    if not crop_info:
+        crop_info = get_crop_info('maize')  # fallback to maize
+        if not crop_info:
+            crop_info = {
+                'emoji': '🌱',
+                'season': 'Varies by region',
+                'duration': '90-150 days',
+                'yield': 'Varies by variety',
+                'market_price': 'Check local markets',
+                'tips': 'Follow good agricultural practices for best results.'
+            }
     
     return jsonify({
         'success': True,
@@ -639,6 +652,59 @@ def weather():
             {'title': 'Good Weather for Farming', 'description': 'Ideal conditions for field operations and crop growth.'}
         ]
     })
+
+@app.route('/api/test-predict', methods=['GET'])
+def test_predict():
+    """Test endpoint to verify prediction system is working"""
+    try:
+        # Test with sample rice conditions
+        test_data = {
+            'nitrogen': 90,
+            'phosphorus': 60,
+            'potassium': 50,
+            'temperature': 27,
+            'humidity': 85,
+            'ph': 6.0,
+            'rainfall': 200
+        }
+        
+        # Test the prediction function
+        input_features = np.array([[
+            test_data['nitrogen'], test_data['phosphorus'], test_data['potassium'],
+            test_data['temperature'], test_data['humidity'], test_data['ph'], test_data['rainfall']
+        ]])
+        
+        result = {
+            'model_available': MODEL_AVAILABLE,
+            'test_input': test_data,
+            'status': 'success'
+        }
+        
+        if MODEL_AVAILABLE and crop_model and scaler:
+            try:
+                input_scaled = scaler.transform(input_features)
+                prediction = crop_model.predict(input_scaled)[0]
+                confidence = float(max(crop_model.predict_proba(input_scaled)[0]))
+                
+                result['ml_prediction'] = {
+                    'crop': str(prediction),
+                    'confidence': confidence
+                }
+            except Exception as e:
+                result['ml_error'] = str(e)
+        
+        # Test crop info retrieval
+        test_crop_info = get_crop_info('rice')
+        result['crop_info_available'] = test_crop_info is not None
+        result['total_crops_in_dataset'] = len(get_all_crop_names())
+        
+        return jsonify(result)
+        
+    except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'error': str(e)
+        }), 500
 
 @app.route('/api/dashboard-stats', methods=['GET'])
 def dashboard_stats():
