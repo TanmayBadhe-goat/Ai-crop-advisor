@@ -174,12 +174,92 @@ agricultural_knowledge = {
             "🌾 Popular wheat varieties: HD2967, PBW343, DBW17. Ensure proper drainage to prevent waterlogging."
         ]
     },
+    'maize': {
+        'keywords': ['maize', 'corn', 'makka', 'मक्का'],
+        'responses': [
+            "🌽 Maize grows in both Kharif and Rabi seasons. Requires well-drained soil and 21-27°C temperature.",
+            "🌽 For maize: Apply 120kg N, 60kg P2O5, 40kg K2O per hectare. Plant with 60cm row spacing.",
+            "🌽 Control stem borer and fall armyworm. Harvest when kernels are hard and moisture is 15-20%."
+        ]
+    },
+    'cotton': {
+        'keywords': ['cotton', 'kapas', 'कपास'],
+        'responses': [
+            "🌿 Cotton is a Kharif crop requiring 180-200 frost-free days. Plant in April-June with black cotton soil.",
+            "🌿 For cotton: Apply 120kg N, 60kg P2O5, 30kg K2O per hectare. Maintain soil moisture at 70-80%.",
+            "🌿 Monitor for bollworm, whitefly, and pink bollworm. Pick cotton when bolls are fully opened."
+        ]
+    },
+    'tomato': {
+        'keywords': ['tomato', 'tamatar', 'टमाटर'],
+        'responses': [
+            "🍅 Tomatoes grow year-round with proper care. Require well-drained soil and 20-25°C temperature.",
+            "🍅 For tomatoes: Apply 100kg N, 50kg P2O5, 50kg K2O per hectare. Provide support stakes.",
+            "🍅 Control early blight, late blight, and fruit borer. Harvest when fruits are firm and red."
+        ]
+    },
+    'potato': {
+        'keywords': ['potato', 'aloo', 'आलू'],
+        'responses': [
+            "🥔 Potatoes are Rabi crops planted in October-November. Require cool weather and well-drained soil.",
+            "🥔 For potatoes: Apply 120kg N, 60kg P2O5, 60kg K2O per hectare. Earth up regularly.",
+            "🥔 Control late blight and potato tuber moth. Harvest when plants turn yellow and dry."
+        ]
+    },
     'fertilizer': {
         'keywords': ['fertilizer', 'khad', 'खाद', 'urea', 'dap', 'npk'],
         'responses': [
             "🌱 NPK fertilizers: N for leaf growth, P for roots/flowers, K for disease resistance. Test soil before applying.",
             "🌱 Organic fertilizers: Compost, vermicompost, green manure improve soil health long-term.",
             "🌱 Apply fertilizers in split doses: 1/3 at sowing, 1/3 at vegetative stage, 1/3 at flowering."
+        ]
+    },
+    'irrigation': {
+        'keywords': ['irrigation', 'water', 'watering', 'सिंचाई', 'पानी'],
+        'responses': [
+            "💧 Drip irrigation saves 30-50% water compared to flood irrigation. Best for water-scarce areas.",
+            "💧 Water crops early morning or evening to reduce evaporation. Check soil moisture regularly.",
+            "💧 Critical irrigation stages: germination, flowering, and grain filling. Avoid waterlogging."
+        ]
+    },
+    'pest_control': {
+        'keywords': ['pest', 'insect', 'bug', 'कीट', 'disease', 'बीमारी'],
+        'responses': [
+            "🐛 Use IPM (Integrated Pest Management): biological, cultural, and chemical methods together.",
+            "🐛 Neem oil is effective against aphids, whiteflies, and thrips. Spray during cooler hours.",
+            "🐛 Monitor crops regularly. Use pheromone traps and beneficial insects like ladybugs."
+        ]
+    },
+    'soil': {
+        'keywords': ['soil', 'मिट्टी', 'ph', 'nutrients', 'testing'],
+        'responses': [
+            "🌱 Test soil pH annually. Most crops prefer 6.0-7.5 pH. Add lime to increase, sulfur to decrease pH.",
+            "🌱 Soil health indicators: organic matter, water retention, and microbial activity.",
+            "🌱 Add compost and crop rotation to improve soil structure and fertility naturally."
+        ]
+    },
+    'weather': {
+        'keywords': ['weather', 'rain', 'temperature', 'मौसम', 'climate'],
+        'responses': [
+            "🌤️ Monitor weather forecasts for irrigation and pest management decisions.",
+            "🌤️ Protect crops from extreme weather: use mulching, shade nets, and windbreaks.",
+            "🌤️ Adjust planting dates based on monsoon predictions and temperature patterns."
+        ]
+    },
+    'organic': {
+        'keywords': ['organic', 'natural', 'जैविक', 'compost', 'vermicompost'],
+        'responses': [
+            "🌿 Organic farming uses natural inputs: compost, biofertilizers, and biopesticides.",
+            "🌿 Vermicompost provides slow-release nutrients and improves soil structure.",
+            "🌿 Crop rotation and green manuring are key practices in organic farming."
+        ]
+    },
+    'seeds': {
+        'keywords': ['seed', 'variety', 'बीज', 'planting', 'sowing'],
+        'responses': [
+            "🌱 Use certified seeds from authorized dealers. Check germination rate before sowing.",
+            "🌱 Treat seeds with fungicide or bioagents to prevent soil-borne diseases.",
+            "🌱 Choose varieties suitable for your region's climate and soil conditions."
         ]
     }
 }
@@ -188,15 +268,46 @@ def get_fallback_response(user_message):
     """Generate intelligent fallback response based on agricultural knowledge"""
     user_message_lower = user_message.lower()
     
-    # Check for specific crop mentions
+    # Check for specific crop mentions first
     for crop, data in agricultural_knowledge.items():
         if 'keywords' in data:
             for keyword in data['keywords']:
                 if keyword.lower() in user_message_lower:
                     return random.choice(data['responses'])
     
-    # Default helpful response
-    return "🌾 I'm here to help with your farming questions! You can ask me about:\n• Crop cultivation (rice, wheat, maize, cotton, etc.)\n• Fertilizers and soil management\n• Irrigation and pest control\n• Seeds and varieties\n• Organic farming\n\nPlease ask a specific question about any farming topic!"
+    # Check for question patterns and provide contextual responses
+    if any(word in user_message_lower for word in ['how', 'when', 'what', 'which', 'where', 'why']):
+        if any(word in user_message_lower for word in ['grow', 'plant', 'cultivate', 'farming']):
+            return "🌾 For successful crop cultivation, consider: soil type, climate, water availability, and market demand. Choose crops suitable for your region and season. Would you like specific advice for a particular crop?"
+        
+        elif any(word in user_message_lower for word in ['price', 'cost', 'market', 'sell']):
+            return "💰 Crop prices vary by region, season, and quality. Check local mandis, online platforms, and government MSP rates. Focus on crops with good demand in your area."
+        
+        elif any(word in user_message_lower for word in ['disease', 'problem', 'issue', 'pest']):
+            return "🐛 Common crop problems include pests, diseases, and nutrient deficiencies. Share photos of affected plants for better diagnosis. Use IPM practices for sustainable pest control."
+        
+        elif any(word in user_message_lower for word in ['fertilizer', 'nutrition', 'nutrients']):
+            return "🌱 Soil testing helps determine nutrient needs. Use balanced NPK fertilizers with organic matter. Apply in split doses for better efficiency and reduced losses."
+    
+    # Check for greetings
+    if any(word in user_message_lower for word in ['hello', 'hi', 'hey', 'namaste', 'good morning', 'good evening']):
+        return "🙏 Namaste! I'm KrishiMitra, your farming assistant. I can help with crop advice, pest control, fertilizers, irrigation, and market information. What would you like to know?"
+    
+    # Check for thanks
+    if any(word in user_message_lower for word in ['thank', 'thanks', 'dhanyawad', 'धन्यवाद']):
+        return "🙏 You're welcome! Happy farming! Feel free to ask if you need more agricultural advice. Good luck with your crops!"
+    
+    # General farming topics
+    farming_topics = [
+        "🌾 I can help with crop selection based on your soil and climate conditions.",
+        "🌱 Ask me about fertilizer recommendations for specific crops and growth stages.",
+        "💧 I provide irrigation scheduling and water management advice.",
+        "🐛 Get pest and disease identification with treatment recommendations.",
+        "📊 Learn about market prices and best crops for your region.",
+        "🌿 Discover organic farming practices and sustainable agriculture methods."
+    ]
+    
+    return f"🌾 I'm KrishiMitra, your AI farming assistant! {random.choice(farming_topics)}\n\nYou can ask me about:\n• Crop cultivation (rice, wheat, maize, cotton, tomato, potato)\n• Fertilizers and soil management\n• Irrigation and water management\n• Pest control and disease management\n• Seeds and varieties\n• Organic farming practices\n• Market prices and crop selection\n\nWhat specific farming question do you have?"
 
 @app.route('/api/predict', methods=['POST'])
 def predict_crop():
@@ -547,7 +658,7 @@ def chatbot():
     # Fallback to agricultural knowledge base
     try:
         fallback_response = get_fallback_response(user_msg)
-        logger.info(f"Using knowledge base fallback")
+        logger.info(f"Using knowledge base fallback for: {user_msg}")
         
         return jsonify({
             'success': True, 
@@ -564,6 +675,112 @@ def chatbot():
             'response': '🌾 I\'m here to help with farming questions! You can ask me about crops like rice, wheat, maize, cotton, fertilizers, irrigation, pest control, and more.',
             'source': 'emergency_fallback'
         })
+
+@app.route('/api/test-fallback', methods=['POST'])
+def test_fallback():
+    """Test endpoint to verify fallback system with various questions"""
+    test_questions = [
+        "Hello",
+        "How to grow rice?",
+        "What is the best fertilizer for tomatoes?",
+        "When to plant wheat?",
+        "How to control pests in cotton?",
+        "What are the irrigation requirements for maize?",
+        "Thank you for the help",
+        "What is the market price of potatoes?",
+        "How to improve soil health?",
+        "What are organic farming practices?"
+    ]
+    
+    results = []
+    for question in test_questions:
+        try:
+            response = get_fallback_response(question)
+            results.append({
+                'question': question,
+                'response': response,
+                'status': 'success'
+            })
+        except Exception as e:
+            results.append({
+                'question': question,
+                'response': str(e),
+                'status': 'error'
+            })
+    
+    return jsonify({
+        'success': True,
+        'test_results': results,
+        'total_questions': len(test_questions),
+        'knowledge_base_topics': list(agricultural_knowledge.keys())
+    })
+
+@app.route('/api/test-gemini', methods=['POST'])
+def test_gemini():
+    """Test endpoint to specifically check Gemini API functionality"""
+    test_message = "What is the best crop for sandy soil?"
+    
+    gemini_status = {
+        'api_key_configured': bool(GEMINI_API_KEY),
+        'api_key_source': 'environment' if os.environ.get('Gemini_API_key') else 'hardcoded',
+        'api_key_preview': f"{GEMINI_API_KEY[:10]}..." if GEMINI_API_KEY else None,
+        'genai_available': GENAI_AVAILABLE,
+        'model_configured': GEMINI_MODEL,
+        'test_results': []
+    }
+    
+    if GENAI_AVAILABLE and GEMINI_API_KEY:
+        gemini_models = ['gemini-pro', 'gemini-1.5-flash', 'models/gemini-pro']
+        
+        for model_name in gemini_models:
+            try:
+                logger.info(f"Testing Gemini model: {model_name}")
+                model_ai = genai.GenerativeModel(model_name)
+                prompt = f"You are a farming expert. Answer concisely: {test_message}"
+                resp = model_ai.generate_content(prompt)
+                text = (resp.text or '').strip()
+                
+                gemini_status['test_results'].append({
+                    'model': model_name,
+                    'status': 'success' if text else 'empty_response',
+                    'response_length': len(text) if text else 0,
+                    'response_preview': text[:100] + '...' if len(text) > 100 else text,
+                    'error': None
+                })
+                
+                if text and len(text) > 10:
+                    logger.info(f"✅ Gemini model {model_name} working")
+                else:
+                    logger.warning(f"⚠️ Gemini model {model_name} returned empty response")
+                    
+            except Exception as gemini_error:
+                error_msg = str(gemini_error)
+                logger.error(f"❌ Gemini model {model_name} failed: {error_msg}")
+                gemini_status['test_results'].append({
+                    'model': model_name,
+                    'status': 'error',
+                    'response_length': 0,
+                    'response_preview': None,
+                    'error': error_msg
+                })
+    else:
+        gemini_status['test_results'].append({
+            'model': 'none',
+            'status': 'not_available',
+            'response_length': 0,
+            'response_preview': None,
+            'error': 'Gemini API not available or not configured'
+        })
+    
+    return jsonify({
+        'success': True,
+        'gemini_status': gemini_status,
+        'environment_variables': {
+            'Gemini_API_key': 'SET' if os.environ.get('Gemini_API_key') else 'NOT_SET',
+            'GEMINI_MODEL': os.environ.get('GEMINI_MODEL', 'NOT_SET'),
+            'Weather_API_key': 'SET' if os.environ.get('Weather_API_key') else 'NOT_SET'
+        }
+    })
 
 @app.route('/api/weather', methods=['POST'])
 def weather():

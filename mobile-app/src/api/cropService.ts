@@ -150,6 +150,11 @@ export interface DashboardStatsResponse {
   last_updated: string;
 }
 
+export interface ChatMessage {
+  role: 'user' | 'assistant';
+  content: string;
+}
+
 // API functions
 export const cropService = {
   // Get crop recommendation
@@ -212,17 +217,49 @@ export const cropService = {
 
   // Send message to chatbot
   sendChatMessage: async (data: ChatbotRequest): Promise<ChatbotResponse> => {
-    try {
+    return retryWithBackoff(async () => {
+      console.log('Sending chat message to:', `${API_URL}/api/chatbot`);
+      console.log('Message data:', data);
+      
       const response = await axios.post(`${API_URL}/api/chatbot`, data, {
         headers: {
           'Content-Type': 'application/json',
         },
+        timeout: 15000, // 15 second timeout for chat
+        // Add cache-busting parameter
+        params: {
+          _t: Date.now()
+        }
       });
+      
+      console.log('Chat response:', response.data);
+      
+      if (!response.data.success) {
+        throw new Error(response.data.error || 'Chat request failed');
+      }
+      
       return response.data;
-    } catch (error) {
-      console.error('Error sending chat message:', error);
+    }, 3, 1000).catch(error => {
+      console.error('Error sending chat message after retries:', error);
+      
+      // Enhanced error handling for network issues
+      if (axios.isAxiosError(error)) {
+        if (error.code === 'ECONNABORTED') {
+          throw new Error('Chat request timeout - please check your internet connection and try again');
+        } else if (error.response) {
+          console.error('Response error:', error.response.status, error.response.data);
+          throw new Error(`Chat service error: ${error.response.status} - ${error.response.data?.error || 'Unknown error'}`);
+        } else if (error.request) {
+          console.error('Network error - no response received');
+          throw new Error('Network error: Unable to reach chat service. Please check your internet connection.');
+        } else {
+          console.error('Request setup error:', error.message);
+          throw new Error(`Chat request error: ${error.message}`);
+        }
+      }
+      
       throw error;
-    }
+    });
   },
 
   // Upload image for disease detection
