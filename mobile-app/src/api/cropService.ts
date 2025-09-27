@@ -227,7 +227,7 @@ export const cropService = {
 
   // Upload image for disease detection
   detectDisease: async (imageUri: string): Promise<DiseaseDetectionResponse> => {
-    try {
+    return retryWithBackoff(async () => {
       console.log('Starting disease detection for image:', imageUri);
       
       // Create FormData for React Native
@@ -245,12 +245,15 @@ export const cropService = {
 
       console.log('Uploading image to:', `${API_URL}/api/upload-image`);
       
-      // First upload the image
+      // First upload the image with retry mechanism
       const uploadResponse = await axios.post(`${API_URL}/api/upload-image`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
-        timeout: 30000, // 30 second timeout
+        timeout: 20000, // 20 second timeout
+        params: {
+          _t: Date.now() // Cache busting
+        }
       });
 
       console.log('Image upload response:', uploadResponse.data);
@@ -268,35 +271,40 @@ export const cropService = {
         headers: {
           'Content-Type': 'application/json',
         },
-        timeout: 30000, // 30 second timeout
+        timeout: 20000, // 20 second timeout
+        params: {
+          _t: Date.now() // Cache busting
+        }
       });
 
       console.log('Disease detection response:', diseaseResponse.data);
 
       if (!diseaseResponse.data.success) {
-        throw new Error('Disease detection failed');
+        throw new Error(diseaseResponse.data.error || 'Disease detection failed');
       }
 
       return diseaseResponse.data;
-    } catch (error) {
-      console.error('Error detecting disease:', error);
+    }, 2, 2000).catch(error => {
+      console.error('Error detecting disease after retries:', error);
       
-      // Provide more specific error information
+      // Enhanced error handling for network issues
       if (axios.isAxiosError(error)) {
-        if (error.response) {
+        if (error.code === 'ECONNABORTED') {
+          throw new Error('Request timeout - Image processing is taking too long. Please try with a smaller image.');
+        } else if (error.response) {
           console.error('Response error:', error.response.status, error.response.data);
-          throw new Error(`Server error: ${error.response.status} - ${error.response.data?.error || 'Unknown error'}`);
+          throw new Error(`Server error: ${error.response.status} - ${error.response.data?.error || 'Disease detection service unavailable'}`);
         } else if (error.request) {
-          console.error('Request error:', error.request);
-          throw new Error('Network error: Unable to reach server');
+          console.error('Network error - no response received');
+          throw new Error('Network error: Unable to reach server. Please check your internet connection.');
         } else {
-          console.error('Setup error:', error.message);
-          throw new Error(`Request setup error: ${error.message}`);
+          console.error('Request setup error:', error.message);
+          throw new Error(`Request error: ${error.message}`);
         }
       }
       
       throw error;
-    }
+    });
   },
 
   // Get dashboard statistics
