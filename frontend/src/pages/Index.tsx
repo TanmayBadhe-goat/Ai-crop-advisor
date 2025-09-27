@@ -8,7 +8,6 @@ import DiseaseDetection from "@/components/DiseaseDetection";
 import AIChat from "@/components/AIChat";
 import CropCalendar from "@/components/CropCalendar";
 import CropPrediction from "@/components/CropPrediction";
-import AnalyticsDashboard from "@/components/AnalyticsDashboard";
 import BusinessModel from "@/components/BusinessModel";
 import LanguageSelector from "@/components/LanguageSelector";
 
@@ -57,14 +56,7 @@ const Index = () => {
             <CropCalendar />
           </div>
         );
-      case "analytics":
-        return (
-          <div className="space-y-6">
-            <h2 className="text-2xl font-bold text-foreground">{t('analytics.title')}</h2>
-            <AnalyticsDashboard />
-          </div>
-        );
-      case "business":
+    case "business":
         return (
           <div className="space-y-6">
             <h2 className="text-2xl font-bold text-foreground">{t('business.title')}</h2>
