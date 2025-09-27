@@ -144,9 +144,14 @@ try:
     genai.configure(api_key=GEMINI_API_KEY)
     GENAI_AVAILABLE = True
     logger.info("✅ Google GenerativeAI imported and configured")
-except ImportError:
+    logger.info(f"Using Gemini API key: {GEMINI_API_KEY[:10]}...")
+    logger.info(f"Using Gemini model: {GEMINI_MODEL}")
+except ImportError as e:
     GENAI_AVAILABLE = False
-    logger.warning("❌ Google GenerativeAI not available")
+    logger.warning(f"❌ Google GenerativeAI not available: {e}")
+except Exception as e:
+    GENAI_AVAILABLE = False
+    logger.error(f"❌ Error configuring Gemini API: {e}")
 
 try:
     import requests
@@ -630,19 +635,32 @@ def chatbot():
     
     # Try Gemini first if available
     if GENAI_AVAILABLE and GEMINI_API_KEY:
-        gemini_models = ['gemini-pro', 'gemini-1.5-flash', 'models/gemini-pro']
+        # Updated model list with more reliable models
+        gemini_models = ['gemini-1.5-flash', 'gemini-pro', 'gemini-1.5-pro']
         
         for model_name in gemini_models:
             try:
                 logger.info(f"Trying Gemini model: {model_name}")
                 model_ai = genai.GenerativeModel(model_name)
                 style = 'Answer very concisely in 1-3 sentences.' if concise else 'Answer clearly and helpfully.'
-                prompt = f"You are a farming expert. {style} Question: {user_msg}"
-                resp = model_ai.generate_content(prompt)
+                prompt = f"You are a farming expert helping Indian farmers. {style} Question: {user_msg}"
+                
+                # Add generation config for better reliability
+                generation_config = {
+                    "temperature": 0.7,
+                    "top_p": 0.8,
+                    "top_k": 40,
+                    "max_output_tokens": 1024,
+                }
+                
+                resp = model_ai.generate_content(
+                    prompt,
+                    generation_config=generation_config
+                )
                 text = (resp.text or '').strip()
                 
                 if text and len(text) > 10:
-                    logger.info(f"Successfully used Gemini model: {model_name}")
+                    logger.info(f"✅ Successfully used Gemini model: {model_name}")
                     return jsonify({
                         'success': True, 
                         'response': text, 
@@ -651,8 +669,21 @@ def chatbot():
                         'source': 'gemini',
                         'model_used': model_name
                     })
+                else:
+                    logger.warning(f"⚠️ Gemini model {model_name} returned empty response")
+                    
             except Exception as gemini_error:
-                logger.warning(f"Gemini model {model_name} failed: {gemini_error}")
+                error_msg = str(gemini_error)
+                logger.error(f"❌ Gemini model {model_name} failed: {error_msg}")
+                
+                # Log specific error types for debugging
+                if "404" in error_msg:
+                    logger.error(f"Model {model_name} not found - trying next model")
+                elif "quota" in error_msg.lower() or "limit" in error_msg.lower():
+                    logger.error(f"API quota/rate limit exceeded for {model_name}")
+                elif "permission" in error_msg.lower():
+                    logger.error(f"Permission denied for {model_name} - check API key")
+                
                 continue
     
     # Fallback to agricultural knowledge base
@@ -730,7 +761,7 @@ def test_gemini():
     }
     
     if GENAI_AVAILABLE and GEMINI_API_KEY:
-        gemini_models = ['gemini-pro', 'gemini-1.5-flash', 'models/gemini-pro']
+        gemini_models = ['gemini-1.5-flash', 'gemini-pro', 'gemini-1.5-pro']
         
         for model_name in gemini_models:
             try:
