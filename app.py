@@ -611,6 +611,261 @@ def dashboard_stats():
         'last_updated': datetime.datetime.now().isoformat()
     })
 
+@app.route('/api/crop-calendar', methods=['GET'])
+def crop_calendar():
+    """Get comprehensive crop calendar for Smart India Hackathon"""
+    try:
+        current_month = datetime.datetime.now().month
+        
+        # Comprehensive crop calendar data for Indian agriculture
+        crop_calendar_data = {
+            'kharif_crops': {
+                'season': 'Kharif (June-October)',
+                'description': 'Monsoon crops grown during rainy season',
+                'crops': [
+                    {
+                        'name': 'Rice',
+                        'emoji': '🌾',
+                        'sowing_months': [6, 7],
+                        'harvesting_months': [10, 11],
+                        'duration_days': 120,
+                        'water_requirement': 'High',
+                        'soil_type': 'Clay loam',
+                        'major_states': ['West Bengal', 'Punjab', 'Uttar Pradesh', 'Andhra Pradesh'],
+                        'yield_per_hectare': '3-4 tonnes',
+                        'market_price_range': '₹2000-2500/quintal'
+                    },
+                    {
+                        'name': 'Cotton',
+                        'emoji': '🌿',
+                        'sowing_months': [5, 6],
+                        'harvesting_months': [10, 11, 12],
+                        'duration_days': 180,
+                        'water_requirement': 'Medium',
+                        'soil_type': 'Black cotton soil',
+                        'major_states': ['Gujarat', 'Maharashtra', 'Telangana', 'Punjab'],
+                        'yield_per_hectare': '1.5-2 tonnes',
+                        'market_price_range': '₹5500-6500/quintal'
+                    },
+                    {
+                        'name': 'Sugarcane',
+                        'emoji': '🎋',
+                        'sowing_months': [2, 3, 4],
+                        'harvesting_months': [12, 1, 2, 3],
+                        'duration_days': 365,
+                        'water_requirement': 'Very High',
+                        'soil_type': 'Rich loamy soil',
+                        'major_states': ['Uttar Pradesh', 'Maharashtra', 'Karnataka', 'Tamil Nadu'],
+                        'yield_per_hectare': '70-80 tonnes',
+                        'market_price_range': '₹300-350/quintal'
+                    }
+                ]
+            },
+            'rabi_crops': {
+                'season': 'Rabi (November-April)',
+                'description': 'Winter crops grown during dry season',
+                'crops': [
+                    {
+                        'name': 'Wheat',
+                        'emoji': '🌾',
+                        'sowing_months': [11, 12],
+                        'harvesting_months': [3, 4],
+                        'duration_days': 120,
+                        'water_requirement': 'Medium',
+                        'soil_type': 'Well-drained loamy soil',
+                        'major_states': ['Uttar Pradesh', 'Punjab', 'Haryana', 'Madhya Pradesh'],
+                        'yield_per_hectare': '3-4 tonnes',
+                        'market_price_range': '₹2100-2400/quintal'
+                    },
+                    {
+                        'name': 'Mustard',
+                        'emoji': '🌻',
+                        'sowing_months': [10, 11],
+                        'harvesting_months': [2, 3],
+                        'duration_days': 120,
+                        'water_requirement': 'Low',
+                        'soil_type': 'Sandy loam',
+                        'major_states': ['Rajasthan', 'Haryana', 'Uttar Pradesh', 'West Bengal'],
+                        'yield_per_hectare': '1-1.5 tonnes',
+                        'market_price_range': '₹4500-5500/quintal'
+                    }
+                ]
+            },
+            'zaid_crops': {
+                'season': 'Zaid (March-June)',
+                'description': 'Summer crops grown with irrigation',
+                'crops': [
+                    {
+                        'name': 'Watermelon',
+                        'emoji': '🍉',
+                        'sowing_months': [2, 3],
+                        'harvesting_months': [5, 6],
+                        'duration_days': 90,
+                        'water_requirement': 'High',
+                        'soil_type': 'Sandy loam',
+                        'major_states': ['Uttar Pradesh', 'Rajasthan', 'Punjab', 'Haryana'],
+                        'yield_per_hectare': '20-25 tonnes',
+                        'market_price_range': '₹800-1500/quintal'
+                    },
+                    {
+                        'name': 'Fodder Maize',
+                        'emoji': '🌽',
+                        'sowing_months': [3, 4],
+                        'harvesting_months': [6, 7],
+                        'duration_days': 90,
+                        'water_requirement': 'Medium',
+                        'soil_type': 'Well-drained soil',
+                        'major_states': ['Punjab', 'Haryana', 'Uttar Pradesh', 'Bihar'],
+                        'yield_per_hectare': '40-50 tonnes',
+                        'market_price_range': '₹1200-1800/quintal'
+                    }
+                ]
+            }
+        }
+        
+        # Get current month activities
+        current_activities = []
+        for season_data in crop_calendar_data.values():
+            for crop in season_data['crops']:
+                if current_month in crop['sowing_months']:
+                    current_activities.append({
+                        'activity': 'Sowing',
+                        'crop': crop['name'],
+                        'emoji': crop['emoji'],
+                        'priority': 'High'
+                    })
+                elif current_month in crop['harvesting_months']:
+                    current_activities.append({
+                        'activity': 'Harvesting',
+                        'crop': crop['name'],
+                        'emoji': crop['emoji'],
+                        'priority': 'High'
+                    })
+        
+        # Smart recommendations based on current month
+        smart_recommendations = []
+        if current_month in [6, 7, 8]:  # Monsoon season
+            smart_recommendations.extend([
+                "🌧️ Monitor rainfall levels for optimal rice cultivation",
+                "🦠 Watch for fungal diseases due to high humidity",
+                "💧 Ensure proper drainage to prevent waterlogging"
+            ])
+        elif current_month in [11, 12, 1]:  # Winter season
+            smart_recommendations.extend([
+                "❄️ Protect crops from frost damage",
+                "💧 Schedule irrigation as per crop water requirements",
+                "🌱 Apply balanced fertilizers for winter crops"
+            ])
+        elif current_month in [3, 4, 5]:  # Summer season
+            smart_recommendations.extend([
+                "☀️ Increase irrigation frequency due to high temperatures",
+                "🌿 Use mulching to conserve soil moisture",
+                "🕐 Schedule farm activities during cooler hours"
+            ])
+        
+        return jsonify({
+            'success': True,
+            'current_month': current_month,
+            'current_activities': current_activities,
+            'smart_recommendations': smart_recommendations,
+            'crop_calendar': crop_calendar_data,
+            'generated_for': 'Smart India Hackathon 2025',
+            'last_updated': datetime.datetime.now().isoformat()
+        })
+        
+    except Exception as e:
+        logger.error(f"Crop calendar error: {e}")
+        return jsonify({
+            'success': False,
+            'error': 'Failed to fetch crop calendar data'
+        }), 500
+
+@app.route('/api/farmer-advisory', methods=['POST'])
+def farmer_advisory():
+    """AI-powered farmer advisory system for Smart India Hackathon"""
+    try:
+        data = request.json
+        location = data.get('location', 'India')
+        crop_type = data.get('crop_type', 'general')
+        issue_type = data.get('issue_type', 'general')
+        
+        # Smart advisory responses based on issue type
+        advisory_responses = {
+            'pest_control': [
+                "🐛 Integrated Pest Management (IPM) approach is recommended",
+                "🌿 Use neem-based organic pesticides as first line of defense",
+                "🕷️ Encourage beneficial insects like ladybugs and spiders",
+                "📅 Regular monitoring and early detection is crucial",
+                "💧 Avoid over-watering which can attract pests"
+            ],
+            'disease_management': [
+                "🦠 Ensure proper crop rotation to break disease cycles",
+                "💨 Maintain good air circulation between plants",
+                "🌱 Use disease-resistant varieties when available",
+                "🧪 Apply copper-based fungicides for fungal diseases",
+                "🗑️ Remove and destroy infected plant material immediately"
+            ],
+            'soil_health': [
+                "🧪 Conduct regular soil testing for pH and nutrients",
+                "🌿 Add organic matter like compost and vermicompost",
+                "🔄 Practice crop rotation to maintain soil fertility",
+                "🌱 Use cover crops during fallow periods",
+                "⚖️ Balance NPK ratios based on crop requirements"
+            ],
+            'water_management': [
+                "💧 Implement drip irrigation for water efficiency",
+                "🕐 Water during early morning or evening hours",
+                "🌿 Use mulching to reduce water evaporation",
+                "📊 Monitor soil moisture levels regularly",
+                "🌧️ Harvest rainwater for irrigation purposes"
+            ],
+            'fertilizer_management': [
+                "🧪 Apply fertilizers based on soil test recommendations",
+                "📅 Use split application for nitrogen fertilizers",
+                "🌿 Combine organic and inorganic fertilizers",
+                "⏰ Apply fertilizers at the right growth stages",
+                "💧 Ensure adequate moisture for nutrient uptake"
+            ]
+        }
+        
+        # Get relevant advisory
+        advisory = advisory_responses.get(issue_type, [
+            "🌾 Follow good agricultural practices for better yields",
+            "📚 Stay updated with latest farming techniques",
+            "🤝 Connect with local agricultural extension officers",
+            "📱 Use technology for precision farming",
+            "🌍 Consider sustainable farming practices"
+        ])
+        
+        # Add location-specific advice
+        location_advice = []
+        if 'punjab' in location.lower() or 'haryana' in location.lower():
+            location_advice.append("🌾 Focus on wheat-rice rotation system")
+            location_advice.append("💧 Manage groundwater depletion issues")
+        elif 'maharashtra' in location.lower():
+            location_advice.append("🌿 Consider cotton and sugarcane cultivation")
+            location_advice.append("🌧️ Plan for monsoon variability")
+        elif 'kerala' in location.lower():
+            location_advice.append("🥥 Coconut and spice cultivation is ideal")
+            location_advice.append("🌧️ Manage high humidity related diseases")
+        
+        return jsonify({
+            'success': True,
+            'advisory': advisory,
+            'location_specific': location_advice,
+            'crop_type': crop_type,
+            'issue_type': issue_type,
+            'generated_by': 'KrishiMitra AI - Smart India Hackathon 2025',
+            'timestamp': datetime.datetime.now().isoformat()
+        })
+        
+    except Exception as e:
+        logger.error(f"Farmer advisory error: {e}")
+        return jsonify({
+            'success': False,
+            'error': 'Failed to generate farmer advisory'
+        }), 500
+
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     logger.info(f"Starting KrishiMitra API on port {port}")
